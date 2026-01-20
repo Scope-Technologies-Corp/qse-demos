@@ -1,0 +1,54 @@
+{
+  "version": "DEMOv1",
+  "entropy_type": "system",
+  "system_packet": {
+    "scheme": "SYSTEM(os.urandom-4B)",
+    "nonce_hex": "a4124ec7645e4345d8f49345",
+    "ciphertext_hex": "d58d82e01c676d5ace2c3d20d8021b44a5e84da575728bfc59ee07e6efb7fec362b7355932231c0aefdc594e568a6e3a35531b0a0a03668b533bdd7749cf41daaaa7782b612ad073861d0d",
+    "aad_hex": "656e74726f70792d64656d6f2d6161642d7631",
+    "seed_hint": null,
+    "key_fingerprint": "afdd53964b1c1eed0b3ac8aa78b068d23f7261a863b19e7369d7ad6b2520cf05"
+  },
+  "qrng_packet": {
+    "scheme": "QRNG(256B base64)",
+    "nonce_hex": "b201bd1bb2cf838134e28f45",
+    "ciphertext_hex": "0393f2fd3f389db2fa6e4eb0e6059f5cb49644ffad92904248cbdaad019349a706fbb3ee90e296d6084950acca142b1115fb604ab9d3690a3c7826a2367f2b6303c3e0991b2d8488e74756",
+    "aad_hex": "656e74726f70792d64656d6f2d6161642d7631",
+    "seed_hint": null,
+    "key_fingerprint": "eef215cd0c847a8703cc2349f70dc47502f9684efb0b9a1ebc83ac80ba76f3e1"
+  },
+  "attack_result": {
+    "success": false,
+    "recovered_seed": null,
+    "recovered_plaintext": null,
+    "guesses": 0,
+    "elapsed_sec": 0.0,
+    "guesses_per_sec": 0.0,
+    "window_seconds": 0,
+    "search_space_size": 4294967296,
+    "search_space_bits": 32.0
+  },
+  "assumptions": {
+    "qrng_bytes_per_request": 256,
+    "qrng_raw_bits_sampled": 2048,
+    "conditioned_key_bits_reported": 256.0,
+    "system_entropy_bits": 32.0,
+    "note": "QRNG brute force is not executed; work factor is computed theoretically."
+  },
+  "summary_rows": [
+    {
+      "label": "System entropy",
+      "entropy_source": "os.urandom (4 bytes = 32 bits)",
+      "attacker_search_space": "2^32 (seed space)",
+      "approx_bits": 32.0,
+      "expected_attack_time_at_rate_sec": 4.294967296
+    },
+    {
+      "label": "QRNG seed",
+      "entropy_source": "QRNG 256-byte sample (base64)",
+      "attacker_search_space": "2^256 (conditioned key size)",
+      "approx_bits": 256.0,
+      "expected_attack_time_at_rate_sec": 1.157920892373162e+68
+    }
+  ]
+}

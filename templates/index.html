@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QSE - QRNG Entropy Demos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1B355E 0%, #2a4168 50%, #7F3D97 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header-logo {
+            max-width: 200px;
+            height: auto;
+            margin: 0 auto 20px;
+            display: block;
+        }
+
+        .header-logo img {
+            max-width: 100%;
+            height: auto;
+            max-height: 100px;
+        }
+
+        .header h1 {
+            color: #7F3D97;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+
+        .demo-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px 25px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: #7F3D97;
+        }
+
+        .tab-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(127, 61, 151, 0.2);
+        }
+
+        .tab-button.active {
+            background: #7F3D97;
+            color: white;
+        }
+
+        .demo-panel {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .demo-panel.active {
+            display: block;
+        }
+
+        .demo-panel h2 {
+            color: #7F3D97;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #7F3D97;
+        }
+
+        .input-group textarea {
+            min-height: 120px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: #7F3D97;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #6d3484;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(127, 61, 151, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #7F3D97;
+        }
+
+        .result-card h3 {
+            color: #7F3D97;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .result-item strong {
+            color: #555;
+            display: inline-block;
+            min-width: 200px;
+        }
+
+        .progress-bar-container {
+            margin: 20px 0;
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #1B355E, #7F3D97);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .comparison-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .comparison-card.weak {
+            border-color: #e74c3c;
+        }
+
+        .comparison-card.qrng {
+            border-color: #27ae60;
+        }
+
+        .comparison-card h4 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .comparison-card.weak h4 {
+            color: #e74c3c;
+        }
+
+        .comparison-card.qrng h4 {
+            color: #27ae60;
+        }
+
+        .stat-badge {
+            display: inline-block;
+            padding: 8px 15px;
+            background: white;
+            border-radius: 20px;
+            margin: 5px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-badge.success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .stat-badge.danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .stat-badge.info {
+            background: #3498db;
+            color: white;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            height: 300px;
+            position: relative;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #7F3D97;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 2px solid #333;
+        }
+
+        .status-log-entry {
+            margin: 8px 0;
+            padding: 8px;
+            border-left: 3px solid #7F3D97;
+            padding-left: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .status-log-entry.success {
+            border-left-color: #27ae60;
+            color: #27ae60;
+        }
+
+        .status-log-entry.info {
+            border-left-color: #3498db;
+            color: #3498db;
+        }
+
+        .status-log-entry.warning {
+            border-left-color: #f39c12;
+            color: #f39c12;
+        }
+
+        .status-log-entry.error {
+            border-left-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 25px;
+            left: 60%;
+            width: 80%;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 1;
+        }
+
+        .step:last-child::after {
+            display: none;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-circle {
+            background: #7F3D97;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .step.completed .step-circle {
+            background: #27ae60;
+            color: white;
+        }
+
+        .step.completed .step-circle::before {
+            content: '✓';
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(127, 61, 151, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(127, 61, 151, 0); }
+        }
+
+        .operation-status {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #7F3D97;
+        }
+
+        .operation-status.current {
+            background: #f3e5f5;
+            border-left-color: #7F3D97;
+            animation: highlight 1s ease-in-out infinite;
+        }
+
+        @keyframes highlight {
+            0%, 100% { background: #f3e5f5; }
+            50% { background: #e1bee7; }
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .params-grid .input-group {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .params-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">
+                <img src="{{ url_for('static', filename='QSE_logo_short_Color.png') }}" alt="QSE Logo">
+            </div>
+            <h1>QRNG Entropy Demos</h1>
+            <p>Interactive Webinar Presentation - Demonstrating the Critical Importance of Entropy Quality</p>
+        </div>
+
+        <div class="demo-tabs">
+            <button class="tab-button active" onclick="showTab('entropy')">Entropy Effectiveness</button>
+            <button class="tab-button" onclick="showTab('rsa')">RSA Shared Prime</button>
+            <button class="tab-button" onclick="showTab('qrng-simple')">QRNG Key Derivation</button>
+        </div>
+
+        <!-- Entropy Effectiveness Demo -->
+        <div id="entropy-panel" class="demo-panel active">
+            <h2>Entropy Effectiveness Demo</h2>
+            
+            <!-- Educational Section -->
+            <div class="educational-box" style="background: #f0f7ff; border-left: 4px solid #7F3D97; padding: 20px; margin-bottom: 25px; border-radius: 8px;">
+                <h3 style="color: #7F3D97; margin-bottom: 15px; font-size: 1.3em;">📚 Understanding Entropy (Simple Explanation)</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <div>
+                        <h4 style="color: #e74c3c; margin-bottom: 10px;">❌ What is Weak Entropy?</h4>
+                        <p style="line-height: 1.8; color: #555;">
+                            <strong>Think of it like a password:</strong> If you use your birthday (like "January 15, 2024") as a password, 
+                            it's easy for someone to guess because they know it's a date. <strong>Weak entropy</strong> is like using 
+                            predictable information (like the current time) to create encryption keys. Attackers can easily guess it!
+                        </p>
+                        <p style="line-height: 1.8; color: #555; margin-top: 10px;">
+                            <strong>In our demo:</strong> We use the current timestamp (like "2024-01-15 14:30:25") as the "seed" 
+                            to create an encryption key. Since timestamps are predictable, attackers can try all possible timestamps 
+                            in a small window and break the encryption in seconds!
+                        </p>
+                    </div>
+                    <div>
+                        <h4 style="color: #27ae60; margin-bottom: 10px;">✅ What is Strong Entropy (QRNG)?</h4>
+                        <p style="line-height: 1.8; color: #555;">
+                            <strong>Think of it like a truly random password:</strong> Instead of using your birthday, you use a 
+                            completely random string like "Xk9#mP2$qL8@nR5". No one can guess it because it's truly random. 
+                            <strong>QRNG entropy</strong> uses quantum physics to generate truly unpredictable random numbers.
+                        </p>
+                        <p style="line-height: 1.8; color: #555; margin-top: 10px;">
+                            <strong>In our demo:</strong> QRNG provides 256 bytes of completely unpredictable random data. 
+                            Even if attackers know everything about the system, they can't predict what the random numbers will be. 
+                            This makes brute-force attacks impossible (would take billions of years)!
+                        </p>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #ddd;">
+                    <h4 style="color: #7F3D97; margin-bottom: 10px;">🔑 Key Terms Explained:</h4>
+                    <ul style="line-height: 2; color: #555; columns: 2; column-gap: 30px;">
+                        <li><strong>Seed:</strong> The starting point used to create an encryption key (like a password hint)</li>
+                        <li><strong>Weak Seed Space:</strong> Small number of possible seeds (like 361 timestamps) - easy to guess</li>
+                        <li><strong>Strong Seed Space:</strong> Huge number of possibilities (2^256) - impossible to guess</li>
+                        <li><strong>Brute-Force Attack:</strong> Trying every possible seed until finding the right one</li>
+                        <li><strong>Encryption Key:</strong> The "password" used to lock/unlock your encrypted data</li>
+                        <li><strong>Entropy:</strong> How unpredictable and random your seed/key material is</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <p style="margin-bottom: 20px; color: #666;">
+                Compare weak timestamp-based entropy vs. high-quality QRNG entropy. Watch as weak seeds are brute-forced in real-time.
+            </p>
+
+            <div class="input-group">
+                <label for="qrng-b64-entropy">QRNG Base64 Data (256+ bytes):</label>
+                <textarea id="qrng-b64-entropy" placeholder="Paste your base64-encoded QRNG data here..."></textarea>
+            </div>
+
+            <div class="params-grid">
+                <div class="input-group">
+                    <label for="message-entropy">Message to Encrypt:</label>
+                    <input type="text" id="message-entropy" value="Entropy matters: weak seed space collapses security.">
+                </div>
+                <div class="input-group">
+                    <label for="window-entropy">Brute-Force Window (seconds):</label>
+                    <input type="number" id="window-entropy" value="120" min="10" max="600">
+                </div>
+                <div class="input-group">
+                    <label>
+                        <input type="checkbox" id="use-system-entropy"> Use System Entropy (os.urandom) instead of Weak Timestamp
+                    </label>
+                </div>
+            </div>
+
+            <!-- Entropy Comparison Preview -->
+            <div id="entropy-preview" style="display: none; margin: 20px 0; background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #7F3D97;">
+                <h3 style="color: #7F3D97; margin-bottom: 15px;">🔍 What We're Comparing</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px;">Weak Entropy (Timestamp)</h4>
+                        <div style="font-family: monospace; font-size: 1.1em; color: #7F3D97; font-weight: bold; margin: 10px 0; text-align: center; padding: 10px; background: white; border-radius: 4px;" id="weak-entropy-display">
+                            Loading...
+                        </div>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px; text-align: center;">
+                            Current date and time used as seed
+                        </div>
+                    </div>
+                    <div style="background: #d4edda; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px;">QRNG Entropy (Quantum Random)</h4>
+                        <div style="font-family: monospace; font-size: 0.85em; color: #27ae60; font-weight: bold; margin: 10px 0; word-break: break-all; text-align: center; padding: 10px; background: white; border-radius: 4px; max-height: 80px; overflow-y: auto;" id="qrng-entropy-display">
+                            Loading...
+                        </div>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px; text-align: center;">
+                            256 bytes of quantum random data used as seed
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="runEntropyDemo()">Run Demo</button>
+                <button class="btn btn-secondary" onclick="clearResults('entropy')">Clear Results</button>
+            </div>
+
+            <div id="entropy-loading" class="loading">
+                <div class="spinner"></div>
+                <p>Running demo... This may take a moment.</p>
+            </div>
+
+            <div id="entropy-steps" style="display: none; margin: 20px 0;"></div>
+
+            <div id="entropy-status" class="status-log" style="display: none;"></div>
+
+            <!-- Attack Visualization -->
+            <div id="entropy-attack-visualization" style="display: none; margin: 20px 0;">
+                <div class="result-card" style="background: #fff3cd; border-left-color: #f39c12;">
+                    <h3 style="color: #856404;">🔍 Live Attack Visualization</h3>
+                    <div style="margin: 15px 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <div><strong>What's happening:</strong> The attacker is trying different timestamps (seeds) to find the right one</div>
+                            <div id="attack-current-seed" style="font-family: monospace; color: #7F3D97; font-weight: bold;"></div>
+                        </div>
+                        <div id="attack-seeds-tried" style="max-height: 150px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.9em;">
+                            <div style="color: #999; margin-bottom: 10px;">Seeds being tried (timestamps):</div>
+                            <div id="attack-seeds-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="entropy-progress" style="display: none; margin: 20px 0;">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="entropy-progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div id="entropy-progress-text" style="text-align: center; margin-top: 10px;"></div>
+            </div>
+
+            <div id="entropy-results" class="results"></div>
+        </div>
+
+        <!-- RSA Demo -->
+        <div id="rsa-panel" class="demo-panel">
+            <h2>RSA Shared Prime Demo</h2>
+            <p style="margin-bottom: 20px; color: #666;">
+                Generate RSA keys with weak vs. QRNG entropy and detect shared prime factors that compromise security.
+            </p>
+
+            <div class="input-group">
+                <label for="qrng-b64-rsa">QRNG Base64 Data (256+ bytes):</label>
+                <textarea id="qrng-b64-rsa" placeholder="Paste your base64-encoded QRNG data here..."></textarea>
+            </div>
+
+            <div class="params-grid">
+                <div class="input-group">
+                    <label for="count-rsa">Number of Keys:</label>
+                    <input type="number" id="count-rsa" value="200" min="50" max="1000">
+                </div>
+                <div class="input-group">
+                    <label for="bits-rsa">RSA Modulus Bits:</label>
+                    <input type="number" id="bits-rsa" value="512" min="256" step="64">
+                </div>
+                <div class="input-group">
+                    <label for="seed-space-rsa">Weak Seed Space (bits):</label>
+                    <input type="number" id="seed-space-rsa" value="12" min="8" max="20">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="runRSADemo()">Run Demo</button>
+                <button class="btn btn-secondary" onclick="clearResults('rsa')">Clear Results</button>
+            </div>
+
+            <div id="rsa-loading" class="loading">
+                <div class="spinner"></div>
+                <p>Generating RSA keys... This may take a moment.</p>
+            </div>
+
+            <div id="rsa-steps" style="display: none; margin: 20px 0;"></div>
+
+            <div id="rsa-status" class="status-log" style="display: none;"></div>
+
+            <div id="rsa-progress" style="display: none; margin: 20px 0;">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="rsa-progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div id="rsa-progress-text" style="text-align: center; margin-top: 10px;"></div>
+            </div>
+
+            <div id="rsa-results" class="results"></div>
+        </div>
+
+        <!-- QRNG Simple Demo -->
+        <div id="qrng-simple-panel" class="demo-panel">
+            <h2>QRNG Key Derivation Demo</h2>
+            <p style="margin-bottom: 20px; color: #666;">
+                Simple demonstration of deriving a cryptographic key from QRNG data and encrypting a message.
+            </p>
+
+            <div class="input-group">
+                <label for="qrng-b64-simple">QRNG Base64 Data (256+ bytes):</label>
+                <textarea id="qrng-b64-simple" placeholder="Paste your base64-encoded QRNG data here..."></textarea>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="runQRNGSimple()">Run Demo</button>
+                <button class="btn btn-secondary" onclick="clearResults('qrng-simple')">Clear Results</button>
+            </div>
+
+            <div id="qrng-simple-loading" class="loading">
+                <div class="spinner"></div>
+                <p>Deriving key and encrypting...</p>
+            </div>
+
+            <div id="qrng-simple-steps" style="display: none; margin: 20px 0;"></div>
+
+            <div id="qrng-simple-status" class="status-log" style="display: none;"></div>
+
+            <div id="qrng-simple-results" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all panels
+            document.querySelectorAll('.demo-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Remove active from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected panel
+            document.getElementById(tabName + '-panel').classList.add('active');
+            
+            // Activate button
+            event.target.classList.add('active');
+        }
+
+        // Clear results
+        function clearResults(demoType) {
+            // Clear results
+            const resultsDiv = document.getElementById(demoType + '-results');
+            resultsDiv.innerHTML = '';
+            resultsDiv.classList.remove('active');
+            
+            // Clear status log
+            const statusLog = document.getElementById(demoType + '-status');
+            if (statusLog) {
+                statusLog.innerHTML = '';
+                statusLog.style.display = 'none';
+            }
+            
+            // Clear and hide progress bar
+            const progress = document.getElementById(demoType + '-progress');
+            if (progress) {
+                progress.style.display = 'none';
+                const progressBar = document.getElementById(demoType + '-progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                }
+                const progressText = document.getElementById(demoType + '-progress-text');
+                if (progressText) {
+                    progressText.textContent = '';
+                }
+            }
+            
+            // Hide step indicators
+            const stepsContainer = document.getElementById(demoType + '-steps');
+            if (stepsContainer) {
+                stepsContainer.innerHTML = '';
+                stepsContainer.style.display = 'none';
+            }
+            
+            // Hide attack visualization
+            const attackViz = document.getElementById(demoType + '-attack-visualization');
+            if (attackViz) {
+                attackViz.style.display = 'none';
+            }
+            
+            // Hide entropy preview
+            const entropyPreview = document.getElementById(demoType + '-preview');
+            if (entropyPreview) {
+                entropyPreview.style.display = 'none';
+            }
+            
+            // Hide loading spinner
+            const loading = document.getElementById(demoType + '-loading');
+            if (loading) {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Status log helper
+        function addStatusLog(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const entry = document.createElement('div');
+            entry.className = `status-log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Step indicator helper
+        function updateStepIndicator(containerId, steps, currentStep) {
+            const container = document.getElementById(containerId);
+            let html = '<div class="step-indicator">';
+            steps.forEach((step, index) => {
+                let stepClass = '';
+                if (index < currentStep) stepClass = 'completed';
+                else if (index === currentStep) stepClass = 'active';
+                html += `<div class="step ${stepClass}">`;
+                html += `<div class="step-circle">${index + 1}</div>`;
+                html += `<div>${step}</div>`;
+                html += '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Entropy Demo
+        async function runEntropyDemo() {
+            const qrngB64 = document.getElementById('qrng-b64-entropy').value.trim();
+            const message = document.getElementById('message-entropy').value;
+            const window = parseInt(document.getElementById('window-entropy').value);
+            const useSystem = document.getElementById('use-system-entropy').checked;
+
+            if (!qrngB64) {
+                alert('Please provide QRNG base64 data');
+                return;
+            }
+
+            const loading = document.getElementById('entropy-loading');
+            const results = document.getElementById('entropy-results');
+            const progress = document.getElementById('entropy-progress');
+            const statusLog = document.getElementById('entropy-status');
+            const stepsContainer = document.getElementById('entropy-steps');
+            
+            // Clear previous logs
+            statusLog.innerHTML = '';
+            statusLog.style.display = 'block';
+            stepsContainer.style.display = 'block';
+            
+            loading.classList.add('active');
+            results.classList.remove('active');
+            progress.style.display = 'none';
+
+            // Setup steps
+            const steps = useSystem ? 
+                ['Parse QRNG Data', 'Generate System Entropy Key', 'Generate QRNG Key', 'Encrypt Messages', 'Analyze Results'] :
+                ['Parse QRNG Data', 'Generate Weak Entropy Key', 'Generate QRNG Key', 'Encrypt Messages', 'Brute-Force Attack', 'Analyze Results'];
+            updateStepIndicator('entropy-steps', steps, 0);
+
+            try {
+                // Show entropy preview
+                const entropyPreview = document.getElementById('entropy-preview');
+                const weakEntropyDisplay = document.getElementById('weak-entropy-display');
+                const qrngEntropyDisplay = document.getElementById('qrng-entropy-display');
+                
+                if (!useSystem) {
+                    // Show current timestamp as weak entropy
+                    const now = new Date();
+                    const timestamp = Math.floor(now.getTime() / 1000);
+                    const timestampReadable = now.toLocaleString('en-US', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit',
+                        hour12: false 
+                    });
+                    weakEntropyDisplay.textContent = timestampReadable;
+                    weakEntropyDisplay.title = `Unix timestamp: ${timestamp}`;
+                    weakEntropyDisplay.parentElement.querySelector('div[style*="color: #666"]').textContent = 'Current date and time used as seed';
+                } else {
+                    weakEntropyDisplay.textContent = 'System entropy (os.urandom)';
+                    weakEntropyDisplay.parentElement.querySelector('div[style*="color: #666"]').textContent = '4 random bytes from operating system';
+                }
+                
+                // Show QRNG data preview
+                if (qrngB64.length > 0) {
+                    const preview = qrngB64.substring(0, 80) + '...';
+                    qrngEntropyDisplay.textContent = preview;
+                    qrngEntropyDisplay.title = `Full QRNG data: ${qrngB64.length} characters`;
+                } else {
+                    qrngEntropyDisplay.textContent = 'No QRNG data provided';
+                }
+                
+                entropyPreview.style.display = 'block';
+                
+                addStatusLog('entropy-status', 'Starting entropy effectiveness demo...', 'info');
+                addStatusLog('entropy-status', `Entropy type: ${useSystem ? 'System (os.urandom)' : 'Weak (timestamp)'}`, 'info');
+                addStatusLog('entropy-status', `Message: "${message}"`, 'info');
+                addStatusLog('entropy-status', `Brute-force window: ±${window} seconds`, 'info');
+
+                updateStepIndicator('entropy-steps', steps, 1);
+                addStatusLog('entropy-status', 'Parsing QRNG base64 data...', 'info');
+                await new Promise(r => setTimeout(r, 300));
+
+                updateStepIndicator('entropy-steps', steps, 2);
+                addStatusLog('entropy-status', useSystem ? 'Generating system entropy key (os.urandom)...' : 'Generating weak entropy key from timestamp...', 'info');
+                await new Promise(r => setTimeout(r, 300));
+
+                updateStepIndicator('entropy-steps', steps, 3);
+                addStatusLog('entropy-status', 'Generating QRNG entropy key (HKDF-SHA256)...', 'info');
+                await new Promise(r => setTimeout(r, 300));
+
+                updateStepIndicator('entropy-steps', steps, 4);
+                addStatusLog('entropy-status', 'Encrypting messages with AES-GCM...', 'info');
+
+                let response;
+                try {
+                    response = await fetch('/api/entropy-demo', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            qrng_b64: qrngB64,
+                            message: message,
+                            window: window,
+                            use_system_entropy: useSystem
+                        })
+                    });
+                } catch (networkError) {
+                    throw new Error(`Network error: ${networkError.message}. Please check if the server is running.`);
+                }
+
+                // Check if response is ok before parsing
+                if (!response.ok) {
+                    let errorMessage = 'Demo failed';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || `Server error (${response.status}): ${response.statusText}`;
+                    } catch (e) {
+                        errorMessage = `Server error (${response.status}): ${response.statusText}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                
+                addStatusLog('entropy-status', 'Encryption completed', 'success');
+                
+                // Store interval reference to clear it later
+                let progressInterval = null;
+                
+                // Update weak entropy display with actual timestamp used (after data is available)
+                if (!useSystem && data.system_packet && data.system_packet.seed_timestamp) {
+                    weakEntropyDisplay.textContent = data.system_packet.seed_timestamp;
+                    weakEntropyDisplay.style.color = '#e74c3c';
+                }
+                
+                if (!useSystem) {
+                    updateStepIndicator('entropy-steps', steps, 5);
+                    addStatusLog('entropy-status', `Starting brute-force attack (searching ±${window} seconds)...`, 'warning');
+                    progress.style.display = 'block';
+                    
+                    // Show initial progress
+                    let progressBar = document.getElementById('entropy-progress-bar');
+                    let progressText = document.getElementById('entropy-progress-text');
+                    progressBar.style.width = '5%';
+                    progressBar.textContent = '5%';
+                    progressText.textContent = 'Starting brute-force attack...';
+                    
+                    // Update progress periodically during attack
+                    progressInterval = setInterval(() => {
+                        // This would be updated by real progress data if we had streaming
+                        progressText.textContent = 'Brute-forcing weak seed... Testing timestamps...';
+                    }, 500);
+                }
+                
+                // Clear the progress interval if it was set
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                }
+
+                // Show progress updates if available and update to completion
+                if (!useSystem) {
+                    const attackViz = document.getElementById('entropy-attack-visualization');
+                    const seedsList = document.getElementById('attack-seeds-list');
+                    const currentSeedDisplay = document.getElementById('attack-current-seed');
+                    let progressBar = document.getElementById('entropy-progress-bar');
+                    let progressText = document.getElementById('entropy-progress-text');
+                    
+                    attackViz.style.display = 'block';
+                    
+                    if (data.progress_updates && data.progress_updates.length > 0) {
+                        // Show all progress updates with seeds being tried
+                        seedsList.innerHTML = '';
+                        data.progress_updates.forEach((update, idx) => {
+                            if (update.current_seed) {
+                                const seedDiv = document.createElement('div');
+                                seedDiv.style.padding = '5px';
+                                seedDiv.style.borderBottom = '1px solid #333';
+                                seedDiv.innerHTML = `<span style="color: #999;">Attempt ${update.guesses}:</span> <span style="color: #4CAF50;">Trying timestamp: ${update.current_seed.timestamp}</span> <span style="color: #999;">(Seed: ${update.current_seed.seed})</span>`;
+                                seedsList.appendChild(seedDiv);
+                            }
+                        });
+                        
+                        // Show the last progress update
+                        const lastUpdate = data.progress_updates[data.progress_updates.length - 1];
+                        const progressPercent = Math.min(100, parseFloat(lastUpdate.progress.toFixed(1)));
+                        progressBar.style.width = progressPercent + '%';
+                        progressBar.textContent = progressPercent.toFixed(1) + '%';
+                        
+                        if (lastUpdate.current_seed) {
+                            currentSeedDisplay.textContent = `Currently trying: ${lastUpdate.current_seed.timestamp}`;
+                        }
+                        
+                        progressText.textContent = 
+                            `Testing seed ${lastUpdate.guesses.toLocaleString()} / ${lastUpdate.total.toLocaleString()} (${lastUpdate.rate.toFixed(0)} guesses/sec)`;
+                    }
+                    
+                    // Always show 100% completion when results are ready
+                    setTimeout(() => {
+                        progressBar.style.width = '100%';
+                        progressBar.textContent = '100%';
+                        if (data.attack_result.success) {
+                            progressText.textContent = `✓ Attack completed successfully! Found seed in ${data.attack_result.guesses.toLocaleString()} guesses (${data.attack_result.elapsed_sec.toFixed(4)}s)`;
+                            if (data.attack_result.recovered_seed_timestamp) {
+                                currentSeedDisplay.textContent = `✓ Found! Seed: ${data.attack_result.recovered_seed_timestamp}`;
+                                currentSeedDisplay.style.color = '#27ae60';
+                            }
+                        } else {
+                            progressText.textContent = `Attack completed: Tested ${data.attack_result.guesses.toLocaleString()} seeds (${data.attack_result.elapsed_sec.toFixed(4)}s) - No match found`;
+                        }
+                    }, 100);
+                }
+
+                if (!useSystem && data.attack_result.success) {
+                    addStatusLog('entropy-status', `✓ Attack successful! Seed recovered: ${data.attack_result.recovered_seed}`, 'success');
+                    addStatusLog('entropy-status', `Recovered plaintext: "${data.attack_result.recovered_plaintext.split('|')[1] || data.attack_result.recovered_plaintext}"`, 'success');
+                    addStatusLog('entropy-status', `Total guesses: ${data.attack_result.guesses.toLocaleString()} in ${data.attack_result.elapsed_sec.toFixed(4)}s`, 'success');
+                } else if (!useSystem) {
+                    addStatusLog('entropy-status', '✗ Attack failed within the specified window', 'error');
+                }
+
+                updateStepIndicator('entropy-steps', steps, steps.length - 1);
+                addStatusLog('entropy-status', 'Calculating work factors and security analysis...', 'info');
+                await new Promise(r => setTimeout(r, 300));
+
+                addStatusLog('entropy-status', 'Demo completed successfully!', 'success');
+                
+                // Hide progress after a short delay to show completion
+                if (!useSystem && progress.style.display !== 'none') {
+                    setTimeout(() => {
+                        // Keep progress visible but show final state
+                        const progressText = document.getElementById('entropy-progress-text');
+                        if (data.attack_result.success) {
+                            progressText.style.fontWeight = 'bold';
+                            progressText.style.color = '#27ae60';
+                        }
+                    }, 2000);
+                } else if (useSystem) {
+                    // Hide progress for system entropy mode
+                    progress.style.display = 'none';
+                }
+                
+                displayEntropyResults(data);
+            } catch (error) {
+                addStatusLog('entropy-status', `✗ Error: ${error.message}`, 'error');
+                results.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                results.classList.add('active');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function displayEntropyResults(data) {
+            const results = document.getElementById('entropy-results');
+            const attack = data.attack_result;
+            const workFactors = data.work_factors;
+
+            let html = '<div class="result-card">';
+            html += '<h3>🔍 Attack Results - What Just Happened?</h3>';
+            
+            if (data.entropy_type === 'weak') {
+                html += `<div class="result-item"><strong>Attack Status:</strong> <span class="stat-badge ${attack.success ? 'success' : 'danger'}">${attack.success ? '✅ SUCCESS - Encryption Broken!' : '❌ FAILED'}</span></div>`;
+                
+                if (attack.success) {
+                    html += `<div class="result-item" style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 10px 0;">`;
+                    html += `<strong style="color: #155724;">✅ What the Attacker Found:</strong><br>`;
+                    html += `<div style="margin-top: 10px;"><strong>Recovered Seed (Timestamp):</strong> ${attack.recovered_seed_timestamp || attack.recovered_seed}</div>`;
+                    html += `<div style="margin-top: 10px;"><strong>Recovered Secret Message:</strong> <span style="font-family: monospace; background: white; padding: 5px; border-radius: 4px;">${attack.recovered_plaintext.split('|')[1] || attack.recovered_plaintext}</span></div>`;
+                    html += `<div style="margin-top: 10px; color: #155724; font-weight: bold;">The attacker successfully broke the encryption by guessing the timestamp!</div>`;
+                    html += `</div>`;
+                }
+                
+                html += `<div class="result-item"><strong>How Many Guesses:</strong> ${attack.guesses.toLocaleString()} timestamps tried</div>`;
+                html += `<div class="result-item"><strong>Time to Break:</strong> ${attack.elapsed_sec.toFixed(4)} seconds (less than a blink of an eye!)</div>`;
+                html += `<div class="result-item"><strong>Guessing Speed:</strong> ${attack.guesses_per_sec.toLocaleString()} guesses per second</div>`;
+                html += `<div class="result-item"><strong>Search Space (How Many Possibilities):</strong> ${attack.search_space_size.toLocaleString()} timestamps (only ${attack.search_space_bits.toFixed(2)} bits of security)</div>`;
+                
+                if (attack.start_timestamp && attack.end_timestamp) {
+                    html += `<div class="result-item" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px;">`;
+                    html += `<strong>Attack Window:</strong> From ${attack.start_timestamp} to ${attack.end_timestamp}<br>`;
+                    html += `<small style="color: #666;">The attacker only had to try timestamps in this 2-minute window</small>`;
+                    html += `</div>`;
+                }
+            } else {
+                html += `<div class="result-item"><strong>Entropy Type:</strong> System Entropy (os.urandom)</div>`;
+                html += `<div class="result-item"><strong>Seed Space:</strong> 2^${attack.search_space_bits.toFixed(0)} = ${attack.search_space_size.toLocaleString()} possibilities</div>`;
+                html += `<div class="result-item"><strong>Security Level:</strong> ${attack.search_space_bits.toFixed(0)} bits</div>`;
+            }
+            html += '</div>';
+
+            html += '<div class="comparison-grid">';
+            
+            // Weak/System case
+            html += '<div class="comparison-card ' + (data.entropy_type === 'weak' ? 'weak' : 'info') + '">';
+            html += `<h4>${data.entropy_type === 'weak' ? 'Weak Entropy (Timestamp)' : 'System Entropy'}</h4>`;
+            if (data.entropy_type === 'weak' && data.system_packet.seed_timestamp) {
+                html += `<div class="result-item" style="background: #fff3cd; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 2px solid #e74c3c;">`;
+                html += `<strong style="color: #856404; display: block; margin-bottom: 10px;">Entropy Used:</strong>`;
+                html += `<div style="font-family: monospace; font-size: 1.3em; color: #e74c3c; font-weight: bold; text-align: center; padding: 10px; background: white; border-radius: 4px; margin: 10px 0;">${data.system_packet.seed_timestamp}</div>`;
+                html += `<div style="font-size: 0.85em; color: #999; margin-top: 5px; text-align: center;">Unix timestamp: ${data.system_packet.seed_hint}</div>`;
+                html += `</div>`;
+            }
+            html += `<div class="result-item"><strong>Search Space (Possibilities):</strong> ${workFactors.weak.search_space_bits.toFixed(2)} bits = ${Math.pow(2, workFactors.weak.search_space_bits).toLocaleString()} possibilities</div>`;
+            html += `<div class="result-item"><strong>Time to Break:</strong> <span style="color: #e74c3c; font-weight: bold;">${workFactors.weak.expected_time_human}</span></div>`;
+            html += '</div>';
+
+            // QRNG case
+            html += '<div class="comparison-card qrng">';
+            html += '<h4>QRNG Entropy (Quantum Random)</h4>';
+            html += `<div class="result-item" style="background: #d4edda; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 2px solid #27ae60;">`;
+            html += `<strong style="color: #155724; display: block; margin-bottom: 10px;">Entropy Used:</strong>`;
+            html += `<div style="font-family: monospace; font-size: 0.9em; color: #27ae60; font-weight: bold; text-align: center; padding: 10px; background: white; border-radius: 4px; margin: 10px 0; word-break: break-all; max-height: 100px; overflow-y: auto;">256 bytes of quantum random data</div>`;
+            html += `<div style="font-size: 0.85em; color: #999; margin-top: 5px; text-align: center;">2,048 bits of quantum randomness</div>`;
+            html += `</div>`;
+            html += `<div class="result-item"><strong>Raw Bits:</strong> ${workFactors.qrng.raw_bits} bits</div>`;
+            html += `<div class="result-item"><strong>Conditioned Key:</strong> ${workFactors.qrng.conditioned_bits.toFixed(0)} bits</div>`;
+            html += `<div class="result-item"><strong>Time to Break:</strong> <span style="color: #27ae60; font-weight: bold;">${workFactors.qrng.expected_time_human}</span></div>`;
+            html += `<div class="result-item" style="color: #27ae60; font-weight: bold; margin-top: 10px;">✅ SECURE - Impossible to break!</div>`;
+            html += '</div>';
+
+            html += '</div>';
+            
+            // Add educational comparison
+            html += '<div class="result-card" style="background: #e3f2fd; border-left-color: #2196F3; margin-top: 20px;">';
+            html += '<h3 style="color: #1976D2;">💡 Key Takeaway</h3>';
+            html += '<div style="line-height: 1.8; color: #555;">';
+            html += '<p><strong>The same encryption (AES-256) was used in both cases.</strong> The difference is the entropy source:</p>';
+            html += '<ul style="margin-left: 20px; margin-top: 10px;">';
+            html += '<li><strong>Weak Entropy (Timestamp):</strong> Predictable → Easy to guess → Encryption broken in seconds</li>';
+            html += '<li><strong>QRNG Entropy:</strong> Unpredictable → Impossible to guess → Encryption remains secure</li>';
+            html += '</ul>';
+            html += '<p style="margin-top: 15px; font-weight: bold; color: #1976D2;">This proves: <strong>No encryption can protect you if your entropy source is weak!</strong></p>';
+            html += '</div>';
+            html += '</div>';
+
+            // Key fingerprints
+            html += '<div class="result-card">';
+            html += '<h3>Key Fingerprints</h3>';
+            html += `<div class="result-item"><strong>${data.system_packet.scheme} Key:</strong> <code>${data.system_packet.key_fingerprint}</code></div>`;
+            html += `<div class="result-item"><strong>QRNG Key:</strong> <code>${data.qrng_packet.key_fingerprint}</code></div>`;
+            html += '</div>';
+
+            results.innerHTML = html;
+            results.classList.add('active');
+        }
+
+        // RSA Demo
+        async function runRSADemo() {
+            const qrngB64 = document.getElementById('qrng-b64-rsa').value.trim();
+            const count = parseInt(document.getElementById('count-rsa').value);
+            const bits = parseInt(document.getElementById('bits-rsa').value);
+            const seedSpace = parseInt(document.getElementById('seed-space-rsa').value);
+
+            if (!qrngB64) {
+                alert('Please provide QRNG base64 data');
+                return;
+            }
+
+            const loading = document.getElementById('rsa-loading');
+            const results = document.getElementById('rsa-results');
+            const statusLog = document.getElementById('rsa-status');
+            const stepsContainer = document.getElementById('rsa-steps');
+            const progress = document.getElementById('rsa-progress');
+            
+            // Clear previous logs
+            statusLog.innerHTML = '';
+            statusLog.style.display = 'block';
+            stepsContainer.style.display = 'block';
+            
+            loading.classList.add('active');
+            results.classList.remove('active');
+            progress.style.display = 'none';
+
+            const steps = ['Parse QRNG Data', 'Generate Weak Entropy Keys', 'Generate QRNG Keys', 'Scan for Shared Factors', 'Analyze Vulnerabilities'];
+            updateStepIndicator('rsa-steps', steps, 0);
+
+            try {
+                addStatusLog('rsa-status', 'Starting RSA shared prime demo...', 'info');
+                addStatusLog('rsa-status', `Configuration: ${count} keys, ${bits}-bit RSA modulus, ${seedSpace}-bit weak seed space`, 'info');
+
+                updateStepIndicator('rsa-steps', steps, 1);
+                addStatusLog('rsa-status', 'Parsing QRNG base64 data (256 bytes)...', 'info');
+                await new Promise(r => setTimeout(r, 300));
+
+                updateStepIndicator('rsa-steps', steps, 2);
+                addStatusLog('rsa-status', `Generating ${count} weak entropy RSA keys (this may take a moment)...`, 'warning');
+                progress.style.display = 'block';
+                document.getElementById('rsa-progress-bar').style.width = '20%';
+                document.getElementById('rsa-progress-text').textContent = 'Generating weak entropy keys...';
+                
+                const response = await fetch('/api/rsa-demo', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        qrng_b64: qrngB64,
+                        count: count,
+                        bits: bits,
+                        seed_space_bits: seedSpace
+                    })
+                });
+
+                const data = await response.json();
+                
+                document.getElementById('rsa-progress-bar').style.width = '60%';
+                document.getElementById('rsa-progress-text').textContent = 'Generating QRNG keys...';
+                addStatusLog('rsa-status', `Generated ${count} weak entropy keys in ${data.weak_keys.generation_time.toFixed(2)}s`, 'success');
+                
+                updateStepIndicator('rsa-steps', steps, 3);
+                addStatusLog('rsa-status', `Generating ${count} QRNG entropy RSA keys...`, 'info');
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Demo failed');
+                }
+
+                document.getElementById('rsa-progress-bar').style.width = '80%';
+                document.getElementById('rsa-progress-text').textContent = 'Scanning for shared factors...';
+                addStatusLog('rsa-status', `Generated ${count} QRNG keys in ${data.qrng_keys.generation_time.toFixed(2)}s`, 'success');
+                addStatusLog('rsa-status', 'Scanning weak entropy keys for shared prime factors...', 'warning');
+                
+                await new Promise(r => setTimeout(r, 300));
+                addStatusLog('rsa-status', `Found ${data.weak_keys.vulnerable_count} vulnerable keys out of ${count}`, data.weak_keys.vulnerable_count > 0 ? 'error' : 'success');
+                addStatusLog('rsa-status', 'Scanning QRNG keys for shared prime factors...', 'info');
+                
+                await new Promise(r => setTimeout(r, 300));
+                addStatusLog('rsa-status', `Found ${data.qrng_keys.vulnerable_count} vulnerable keys out of ${count}`, data.qrng_keys.vulnerable_count > 0 ? 'error' : 'success');
+
+                updateStepIndicator('rsa-steps', steps, 4);
+                document.getElementById('rsa-progress-bar').style.width = '100%';
+                document.getElementById('rsa-progress-text').textContent = 'Analysis complete!';
+                addStatusLog('rsa-status', 'Analysis completed successfully!', 'success');
+
+                displayRSAResults(data);
+            } catch (error) {
+                addStatusLog('rsa-status', `✗ Error: ${error.message}`, 'error');
+                results.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                results.classList.add('active');
+            } finally {
+                loading.classList.remove('active');
+                progress.style.display = 'none';
+            }
+        }
+
+        function displayRSAResults(data) {
+            const results = document.getElementById('rsa-results');
+            const weak = data.weak_keys;
+            const qrng = data.qrng_keys;
+
+            let html = '<div class="comparison-grid">';
+            
+            // Weak keys
+            html += '<div class="comparison-card weak">';
+            html += '<h4>Weak Entropy Keys</h4>';
+            html += `<div class="result-item"><strong>Keys Generated:</strong> ${weak.count}</div>`;
+            html += `<div class="result-item"><strong>Generation Time:</strong> ${weak.generation_time.toFixed(2)}s</div>`;
+            html += `<div class="result-item"><strong>Vulnerable Keys:</strong> <span class="stat-badge danger">${weak.vulnerable_count} / ${weak.count}</span></div>`;
+            html += `<div class="result-item"><strong>Scan Time:</strong> ${weak.scan_time.toFixed(2)}s</div>`;
+            
+            if (weak.findings.length > 0) {
+                html += '<div style="margin-top: 15px;"><strong>Example Shared Factors:</strong></div>';
+                weak.findings.slice(0, 5).forEach(f => {
+                    html += `<div class="result-item">Key[${f.i}] ↔ Key[${f.j}]: GCD ~${f.gcd_bits} bits</div>`;
+                });
+            }
+            
+            if (weak.top_p_fingerprints.length > 0) {
+                html += '<div style="margin-top: 15px;"><strong>Repeated Prime Fingerprints:</strong></div>';
+                weak.top_p_fingerprints.forEach(p => {
+                    html += `<div class="result-item">${p.fp}: repeated ${p.count} times</div>`;
+                });
+            }
+            
+            html += '</div>';
+
+            // QRNG keys
+            html += '<div class="comparison-card qrng">';
+            html += '<h4>QRNG Entropy Keys</h4>';
+            html += `<div class="result-item"><strong>Keys Generated:</strong> ${qrng.count}</div>`;
+            html += `<div class="result-item"><strong>Generation Time:</strong> ${qrng.generation_time.toFixed(2)}s</div>`;
+            html += `<div class="result-item"><strong>Vulnerable Keys:</strong> <span class="stat-badge success">${qrng.vulnerable_count} / ${qrng.count}</span></div>`;
+            html += `<div class="result-item"><strong>Scan Time:</strong> ${qrng.scan_time.toFixed(2)}s</div>`;
+            
+            if (qrng.vulnerable_count === 0) {
+                html += '<div class="alert alert-success" style="margin-top: 15px;">✅ No shared factors found - QRNG entropy provides secure key generation</div>';
+            } else if (qrng.findings.length > 0) {
+                html += '<div style="margin-top: 15px;"><strong>Unexpected Findings:</strong></div>';
+                qrng.findings.slice(0, 5).forEach(f => {
+                    html += `<div class="result-item">Key[${f.i}] ↔ Key[${f.j}]: GCD ~${f.gcd_bits} bits</div>`;
+                });
+            }
+            
+            html += '</div>';
+            html += '</div>';
+
+            // Summary
+            html += '<div class="result-card">';
+            html += '<h3>Security Analysis</h3>';
+            html += `<p style="margin-bottom: 15px;">When RSA keys share a prime factor, both keys are mathematically compromised. Weak entropy makes prime reuse likely, especially across devices or VMs started at similar times.</p>`;
+            html += `<p><strong>Weak Entropy:</strong> ${weak.vulnerable_count} out of ${weak.count} keys are vulnerable (${((weak.vulnerable_count/weak.count)*100).toFixed(1)}%)</p>`;
+            html += `<p><strong>QRNG Entropy:</strong> ${qrng.vulnerable_count} out of ${qrng.count} keys are vulnerable (${((qrng.vulnerable_count/qrng.count)*100).toFixed(1)}%)</p>`;
+            html += '</div>';
+
+            results.innerHTML = html;
+            results.classList.add('active');
+        }
+
+        // QRNG Simple Demo
+        async function runQRNGSimple() {
+            const qrngB64 = document.getElementById('qrng-b64-simple').value.trim();
+
+            if (!qrngB64) {
+                alert('Please provide QRNG base64 data');
+                return;
+            }
+
+            const loading = document.getElementById('qrng-simple-loading');
+            const results = document.getElementById('qrng-simple-results');
+            const statusLog = document.getElementById('qrng-simple-status');
+            const stepsContainer = document.getElementById('qrng-simple-steps');
+            
+            // Clear previous logs
+            statusLog.innerHTML = '';
+            statusLog.style.display = 'block';
+            stepsContainer.style.display = 'block';
+            
+            loading.classList.add('active');
+            results.classList.remove('active');
+
+            const steps = ['Parse QRNG Data', 'Derive Key (HKDF-SHA256)', 'Encrypt Message (AES-GCM)', 'Display Results'];
+            updateStepIndicator('qrng-simple-steps', steps, 0);
+
+            try {
+                addStatusLog('qrng-simple-status', 'Starting QRNG key derivation demo...', 'info');
+
+                updateStepIndicator('qrng-simple-steps', steps, 1);
+                addStatusLog('qrng-simple-status', 'Parsing QRNG base64 data (256 bytes)...', 'info');
+                await new Promise(r => setTimeout(r, 300));
+
+                updateStepIndicator('qrng-simple-steps', steps, 2);
+                addStatusLog('qrng-simple-status', 'Deriving 256-bit key from QRNG data using SHA-256...', 'info');
+                addStatusLog('qrng-simple-status', 'Mixing QRNG bytes with OS entropy (32 bytes)...', 'info');
+                await new Promise(r => setTimeout(r, 400));
+
+                updateStepIndicator('qrng-simple-steps', steps, 3);
+                addStatusLog('qrng-simple-status', 'Generating random nonce (12 bytes)...', 'info');
+                addStatusLog('qrng-simple-status', 'Encrypting message with AES-GCM...', 'info');
+
+                const response = await fetch('/api/qrng-simple', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        qrng_b64: qrngB64
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Demo failed');
+                }
+
+                addStatusLog('qrng-simple-status', '✓ Key derived successfully', 'success');
+                addStatusLog('qrng-simple-status', `✓ Message encrypted successfully (${data.ciphertext_hex.length / 2} bytes)`, 'success');
+                addStatusLog('qrng-simple-status', `Key fingerprint: ${data.key_fingerprint}`, 'info');
+
+                updateStepIndicator('qrng-simple-steps', steps, 4);
+                addStatusLog('qrng-simple-status', 'Demo completed!', 'success');
+
+                displayQRNGSimpleResults(data);
+            } catch (error) {
+                addStatusLog('qrng-simple-status', `✗ Error: ${error.message}`, 'error');
+                results.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                results.classList.add('active');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function displayQRNGSimpleResults(data) {
+            const results = document.getElementById('qrng-simple-results');
+
+            let html = '<div class="result-card">';
+            html += '<h3>Encryption Results</h3>';
+            html += `<div class="result-item"><strong>Message:</strong> ${data.message}</div>`;
+            html += `<div class="result-item"><strong>Nonce (hex):</strong> <code>${data.nonce_hex}</code></div>`;
+            html += `<div class="result-item"><strong>Ciphertext:</strong> <code>${data.ciphertext_preview}</code></div>`;
+            html += `<div class="result-item"><strong>Key Fingerprint:</strong> <code>${data.key_fingerprint}</code></div>`;
+            html += '</div>';
+
+            html += '<div class="result-card">';
+            html += '<h3>Why Brute Force Fails</h3>';
+            html += '<ul style="margin-left: 20px; line-height: 1.8;">';
+            html += '<li>Weak demo used ~timestamp window (hundreds/thousands of guesses)</li>';
+            html += '<li>QRNG seed material provides 256+ bits of unpredictability</li>';
+            html += '<li>Even 128-bit min-entropy is already out of reach for brute force</li>';
+            html += '<li>The search space is astronomically large (2^256 possibilities)</li>';
+            html += '</ul>';
+            html += '</div>';
+
+            results.innerHTML = html;
+            results.classList.add('active');
+        }
+    </script>
+</body>
+</html>
