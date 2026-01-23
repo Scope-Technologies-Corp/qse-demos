@@ -11,12 +11,14 @@ import json
 import math
 import os
 import struct
+import subprocess
 import time
 import hashlib
 import threading
 from dataclasses import dataclass, asdict
 from typing import Optional, Dict, Any
 import sys
+from pathlib import Path
 
 # Import functions from existing demos
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -594,6 +596,291 @@ def qrng_simple():
     }
     
     return jsonify(result)
+
+
+# ============================================================================
+# STS Demo Functions
+# ============================================================================
+
+# Import STS API module
+try:
+    sys.path.insert(0, str(Path(__file__).parent / "sts-2.1.2"))
+    from sts_api import (
+        generate_entropy_sequences,
+        run_sts_for_source,
+        parse_sts_report,
+        compare_sts_results,
+        generate_scorecard,
+        load_scorecard,
+        find_sts_results_base,
+    )
+    STS_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: STS API not available: {e}", file=sys.stderr)
+    STS_AVAILABLE = False
+
+
+@app.route('/api/sts/scorecard', methods=['GET'])
+def sts_scorecard():
+    """Get existing STS scorecard results"""
+    if not STS_AVAILABLE:
+        return jsonify({'error': 'STS functionality not available'}), 503
+    
+    try:
+        results_base = find_sts_results_base()
+        scorecard_path = results_base / "scorecard.json"
+        
+        scorecard = load_scorecard(scorecard_path)
+        if not scorecard:
+            return jsonify({'error': 'No scorecard found. Run STS tests first.'}), 404
+        
+        return jsonify(scorecard)
+    except Exception as e:
+        return jsonify({'error': f'Failed to load scorecard: {str(e)}'}), 500
+
+
+@app.route('/api/sts/available', methods=['GET'])
+def sts_available():
+    """Check if STS results are available"""
+    if not STS_AVAILABLE:
+        return jsonify({
+            'available': False,
+            'reason': 'STS functionality not available'
+        })
+    
+    try:
+        results_base = find_sts_results_base()
+        scorecard_path = results_base / "scorecard.json"
+        qse_report_path = results_base / "qse" / "finalAnalysisReport.txt"
+        system_report_path = results_base / "system" / "finalAnalysisReport.txt"
+        
+        has_scorecard = scorecard_path.exists()
+        has_qse = qse_report_path.exists()
+        has_system = system_report_path.exists()
+        
+        return jsonify({
+            'available': has_scorecard or (has_qse and has_system),
+            'has_scorecard': has_scorecard,
+            'has_qse_report': has_qse,
+            'has_system_report': has_system,
+        })
+    except Exception as e:
+        return jsonify({
+            'available': False,
+            'reason': str(e)
+        })
+
+
+@app.route('/api/sts/generate-entropy', methods=['POST'])
+def sts_generate_entropy():
+    """Generate entropy sequences for STS testing"""
+    if not STS_AVAILABLE:
+        return jsonify({'error': 'STS functionality not available'}), 503
+    
+    data = request.json
+    source = data.get('source', 'system')  # 'qse' or 'system'
+    sequences = int(data.get('sequences', 100))
+    seq_length_bits = int(data.get('seq_length_bits', 1_000_000))
+    endpoint = data.get('endpoint', os.environ.get('ENTROPY_ENDPOINT', ''))
+    
+    if source == 'qse' and not endpoint:
+        return jsonify({'error': 'QSE endpoint required for QSE entropy generation'}), 400
+    
+    if sequences <= 0 or sequences > 1000:
+        return jsonify({'error': 'sequences must be between 1 and 1000'}), 400
+    
+    if seq_length_bits <= 0 or seq_length_bits > 10_000_000:
+        return jsonify({'error': 'seq_length_bits must be between 1 and 10,000,000'}), 400
+    
+    try:
+        # Determine output directory
+        sts_dir = Path(__file__).parent / "sts-2.1.2"
+        out_dir = sts_dir / "entropy-streams"
+        
+        # Generate entropy sequences
+        out_path, generated_files = generate_entropy_sequences(
+            source=source,
+            sequences=sequences,
+            seq_length_bits=seq_length_bits,
+            out_dir=out_dir,
+            endpoint=endpoint if source == 'qse' else None,
+        )
+        
+        return jsonify({
+            'success': True,
+            'source': source,
+            'sequences': sequences,
+            'seq_length_bits': seq_length_bits,
+            'output_dir': str(out_path),
+            'files_generated': len(generated_files),
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to generate entropy: {str(e)}'}), 500
+
+
+@app.route('/api/sts/run-tests', methods=['POST'])
+def sts_run_tests():
+    """
+    Run NIST STS pipeline using run_pipeline_auto.sh script.
+    This runs the full end-to-end pipeline automatically:
+    1. Generate QSE + System entropy
+    2. Concatenate into single files
+    3. Run ./assess for both (automated)
+    4. Parse reports, compare, generate scorecard
+    """
+    data = request.json
+    sequences = int(data.get('sequences', 100))
+    seq_length_bits = int(data.get('seq_length_bits', 1_000_000))
+    endpoint = data.get('endpoint', '').strip()
+    
+    if not endpoint:
+        return jsonify({'error': 'QSE endpoint is required'}), 400
+    
+    sts_dir = Path(__file__).parent / "sts-2.1.2"
+    script_path = sts_dir / "run_pipeline_auto.sh"
+    
+    if not script_path.exists():
+        return jsonify({'error': f'Automated pipeline script not found: {script_path}'}), 500
+    
+    assess_binary = sts_dir / "assess"
+    if not assess_binary.exists():
+        return jsonify({
+            'error': 'STS binary not found. Run "make" in sts-2.1.2 directory first.'
+        }), 500
+    
+    # Prepare environment with the endpoint
+    # Ensure it ends with /get for the API
+    endpoint_for_env = endpoint.rstrip('/')
+    if not endpoint_for_env.endswith('/get'):
+        endpoint_for_env = endpoint_for_env + '/get'
+    
+    env = os.environ.copy()
+    env['ENTROPY_ENDPOINT'] = endpoint_for_env
+    # Force unbuffered output for Python scripts
+    env['PYTHONUNBUFFERED'] = '1'
+    
+    # Build command - try to use stdbuf for line buffering (may not be available on macOS)
+    # Fallback to regular bash if stdbuf fails
+    output_lines = []
+    
+    try:
+        app.logger.info(f"Running STS pipeline script: {script_path}")
+        app.logger.info(f"ENTROPY_ENDPOINT={endpoint_for_env}")
+        
+        # Try with stdbuf first (for better real-time output)
+        # If stdbuf is not available, fall back to regular execution
+        try:
+            # Check if stdbuf is available
+            subprocess.run(['which', 'stdbuf'], check=True, capture_output=True)
+            use_stdbuf = True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            use_stdbuf = False
+        
+        if use_stdbuf:
+            cmd = [
+                'stdbuf', '-oL', '-eL',  # Line buffered stdout and stderr
+                'bash',
+                str(script_path),
+                '--seq-length', str(seq_length_bits),
+                '--sequences', str(sequences),
+            ]
+        else:
+            cmd = [
+                'bash',
+                str(script_path),
+                '--seq-length', str(seq_length_bits),
+                '--sequences', str(sequences),
+            ]
+        
+        app.logger.info(f"Command: {' '.join(cmd)}")
+        
+        # Run the script and capture output with line buffering
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=str(sts_dir),
+            env=env,
+            text=True,
+            bufsize=1,  # Line buffered
+        )
+        
+        # Read output line by line - capture ALL lines
+        line_count = 0
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                if process.poll() is not None:
+                    break
+                continue
+            line = line.rstrip('\n\r')
+            output_lines.append(line)
+            line_count += 1
+            app.logger.info(f"[STS] {line}")
+            # Log every 100 lines to track progress
+            if line_count % 100 == 0:
+                app.logger.info(f"[STS] Captured {line_count} output lines so far...")
+        
+        # Ensure process is fully terminated
+        return_code = process.wait()
+        app.logger.info(f"[STS] Process completed. Total lines captured: {len(output_lines)}, Exit code: {return_code}")
+        
+        app.logger.info(f"Pipeline finished with exit code: {process.returncode}")
+        
+        # Check if scorecard was generated (success indicator)
+        scorecard_path = sts_dir / "sts-results" / "scorecard.json"
+        scorecard = None
+        
+        if scorecard_path.exists():
+            with open(scorecard_path, 'r') as f:
+                scorecard = json.load(f)
+        
+        # Return results
+        return jsonify({
+            'success': scorecard is not None,
+            'exit_code': process.returncode,
+            'output': output_lines,
+            'scorecard': scorecard,
+            'scorecard_path': str(scorecard_path) if scorecard else None,
+        })
+        
+    except Exception as e:
+        import traceback
+        app.logger.error(f"Pipeline error: {e}")
+        return jsonify({
+            'error': f'Failed to run STS pipeline: {str(e)}',
+            'output': output_lines,
+            'traceback': traceback.format_exc() if app.debug else None
+        }), 500
+
+
+@app.route('/api/sts/status', methods=['GET'])
+def sts_status():
+    """Get status of STS operations (for future async implementation)"""
+    # For now, STS runs synchronously, so this just returns available status
+    if not STS_AVAILABLE:
+        return jsonify({'status': 'unavailable'})
+    
+    return jsonify({
+        'status': 'ready',
+        'available': True,
+    })
+
+
+@app.route('/api/sts/report-html', methods=['GET'])
+def sts_report_html():
+    """Serve the generated HTML scorecard report"""
+    sts_dir = Path(__file__).parent / "sts-2.1.2"
+    report_path = sts_dir / "sts-results" / "scorecard.html"
+    
+    if not report_path.exists():
+        return "<html><body><h1>Report Not Found</h1><p>No scorecard.html has been generated yet. Please run the STS pipeline first.</p></body></html>", 404
+    
+    # Read and serve the HTML file
+    with open(report_path, 'r') as f:
+        content = f.read()
+    
+    return content, 200, {'Content-Type': 'text/html'}
 
 
 if __name__ == '__main__':

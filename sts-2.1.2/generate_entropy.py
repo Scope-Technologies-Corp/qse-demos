@@ -1,10 +1,33 @@
+#!/usr/bin/env python3
+"""
+Generate NIST-ready entropy sequences (.bin) using bulk entropy endpoint or local generator.
+
+Usage:
+    # QSE entropy (requires endpoint)
+    export ENTROPY_ENDPOINT="http://scopesvr.fractalarmor.com:8888/entropy"
+    python3 generate_entropy.py --use qse --seq-length 1000000 --sequences 100
+
+    # Or pass endpoint directly:
+    python3 generate_entropy.py --use qse --endpoint http://scopesvr.fractalarmor.com:8888/entropy --seq-length 1000000 --sequences 100
+
+    # Local system entropy
+    python3 generate_entropy.py --use local --seq-length 1000000 --sequences 100
+
+Output:
+    entropy-streams/qse/seq_0001_1000000bits.bin ... seq_0100_1000000bits.bin
+    entropy-streams/system/seq_0001_1000000bits.bin ... seq_0100_1000000bits.bin
+
+Note: The script automatically adds "/get" to the endpoint if not present.
+      e.g., "http://scopesvr.fractalarmor.com:8888/entropy" becomes
+            "http://scopesvr.fractalarmor.com:8888/entropy/get/125k"
+"""
+
 import argparse
 import json
 import os
 import sys
 import urllib.error
 import urllib.request
-
 import secrets
 
 ENTROPY_ENDPOINT_ENV = "ENTROPY_ENDPOINT"
@@ -42,7 +65,7 @@ def local_entropy_bits(bit_length: int) -> str:
 
 def bytes_to_size_path(byte_count: int) -> str:
     """
-    Convert bytes to path value:
+    Convert bytes to API path value:
       - divisible by 1000 -> Xk
       - else -> Xb
     Examples:
@@ -56,12 +79,21 @@ def bytes_to_size_path(byte_count: int) -> str:
 
 def fetch_bulk_hex(base_url: str, size_path: str) -> str:
     """
-    GET entropy from:
-        base_url/size_path
-    Expected response:
-        {"success": true, "response": "<hex>"}
+    GET entropy from: base_url/get/size_path
+    
+    Example: base_url="http://scopesvr.fractalarmor.com:8888/entropy", size_path="125k"
+    Results in: http://scopesvr.fractalarmor.com:8888/entropy/get/125k
+    
+    Expected response: {"success": true, "response": "<hex>"}
     """
-    url = base_url.rstrip("/") + "/" + size_path.strip().lstrip("/")
+    base_url = base_url.rstrip("/")
+    size_path = size_path.strip().lstrip("/")
+    
+    # Add /get if not present
+    if not base_url.endswith("/get"):
+        base_url = base_url + "/get"
+    
+    url = f"{base_url}/{size_path}"
 
     req = urllib.request.Request(url, method="GET")
     try:
@@ -97,7 +129,7 @@ def main() -> int:
     parser.add_argument(
         "--endpoint",
         default=default_base_url,
-        help=f"Base endpoint (default: ${ENTROPY_ENDPOINT_ENV}). Example: http://api:8888/entropy/get",
+        help=f"Base endpoint (default: ${ENTROPY_ENDPOINT_ENV}). Example: http://scopesvr.fractalarmor.com:8888/entropy",
     )
 
     parser.add_argument(
@@ -158,20 +190,26 @@ def main() -> int:
 
     # Compute how many bytes we need for one sequence
     seq_bytes = (args.seq_length + 7) // 8
-
-    # Determine endpoint size path
     size_path = args.size if args.size else bytes_to_size_path(seq_bytes)
 
     if args.use == "qse":
-        full_url = args.endpoint.rstrip("/") + "/" + size_path
-        print(f"Using bulk endpoint: {full_url}")
+        endpoint_base = args.endpoint.rstrip("/")
+        if not endpoint_base.endswith("/get"):
+            endpoint_base = endpoint_base + "/get"
+        print(f"Using bulk endpoint: {endpoint_base}/{size_path}")
         print(f"Sequence size: {args.seq_length} bits (~{seq_bytes} bytes)")
 
+    # Generate sequences one at a time
     for i in range(1, args.sequences + 1):
         try:
             if args.use == "qse":
                 hex_data = fetch_bulk_hex(args.endpoint, size_path)
-                bits = hex_to_bits(hex_data)[: args.seq_length]
+                bits = hex_to_bits(hex_data)
+                if len(bits) < args.seq_length:
+                    raise RuntimeError(
+                        f"API returned {len(bits)} bits, need {args.seq_length}"
+                    )
+                bits = bits[: args.seq_length]
                 summary = f"{len(bits)} bits via bulk entropy endpoint ({size_path})"
             else:
                 bits = local_entropy_bits(args.seq_length)
