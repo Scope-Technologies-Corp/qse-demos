@@ -212,5 +212,5 @@ __marimo__/
 # Exclude the entire dieharder source, but keep our custom scripts
 dieharder/*
 !dieharder/*.py
-!dieharder/*.sh
+!dieharder/run_pipeline_auto.sh
 !dieharder/.gitignore
