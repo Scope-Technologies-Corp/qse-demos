@@ -35,13 +35,14 @@ RUN make
 
 # Build Dieharder binary
 WORKDIR /app
-RUN if [ ! -d "dieharder" ]; then \
-        git clone https://github.com/eddelbuettel/dieharder.git; \
-    fi
-
-WORKDIR /app/dieharder
-RUN rm -rf .git && \
-    ./autogen.sh && \
+RUN rm -rf dieharder && \
+    git clone https://github.com/eddelbuettel/dieharder.git && \
+    cd dieharder && \
+    rm -rf .git && \
+    ls -la && \
+    test -d libdieharder && test -d include && \
+    libtoolize --force --copy || true && \
+    autoreconf -f -i && \
     ./configure --prefix=/usr/local && \
     make
 
@@ -59,12 +60,6 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy Python dependencies
-# Try common paths for Python site-packages
-COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
-COPY --from=builder /usr/local/lib/python3/dist-packages /usr/local/lib/python3/dist-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-
 # Reinstall Python packages in runtime stage (simpler and more reliable)
 COPY --from=builder /app/requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
@@ -78,7 +73,9 @@ COPY --from=builder /app/start_web_demo.sh .
 
 # Copy built binaries
 COPY --from=builder /app/sts-2.1.2/assess ./sts-2.1.2/assess
-COPY --from=builder /app/dieharder/dieharder/dieharder ./dieharder/dieharder/dieharder
+# Copy dieharder binary and its shared library
+COPY --from=builder /app/dieharder/dieharder/.libs/dieharder ./dieharder/dieharder/dieharder
+COPY --from=builder /app/dieharder/libdieharder/.libs/libdieharder.so* ./dieharder/libdieharder/.libs/
 
 # Copy STS and Dieharder scripts and directories
 COPY --from=builder /app/sts-2.1.2/*.py ./sts-2.1.2/
@@ -94,13 +91,16 @@ RUN mkdir -p \
     sts-2.1.2/sts-results \
     dieharder/entropy-streams \
     dieharder/data \
-    dieharder/dieharder-results
+    dieharder/dieharder-results \
+    dieharder/libdieharder/.libs
 
 # Expose port (default 5001, but app finds free port)
 EXPOSE 5001
 
 # Set Python to unbuffered mode
 ENV PYTHONUNBUFFERED=1
+# Set library path for dieharder
+ENV LD_LIBRARY_PATH=/app/dieharder/libdieharder/.libs
 
 # Run the application
 CMD ["python3", "web_demo_app.py"]
