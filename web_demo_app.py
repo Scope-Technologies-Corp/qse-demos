@@ -12,6 +12,7 @@ import math
 import os
 import struct
 import subprocess
+import shutil
 import time
 import hashlib
 import threading
@@ -877,6 +878,211 @@ def sts_report_html():
     
     if not report_path.exists():
         return "<html><body><h1>Report Not Found</h1><p>No scorecard.html has been generated yet. Please run the STS pipeline first.</p></body></html>", 404
+    
+    # Read and serve the HTML file
+    with open(report_path, 'r') as f:
+        content = f.read()
+    
+    return content, 200, {'Content-Type': 'text/html'}
+
+
+# ============================================================================
+# Dieharder API Endpoints
+# ============================================================================
+
+@app.route('/api/dieharder/scorecard', methods=['GET'])
+def dieharder_scorecard():
+    """Get existing Dieharder scorecard results"""
+    try:
+        dieharder_dir = Path(__file__).parent / "dieharder"
+        scorecard_path = dieharder_dir / "dieharder-results" / "scorecard.json"
+        
+        if not scorecard_path.exists():
+            return jsonify({'error': 'No scorecard found. Run Dieharder tests first.'}), 404
+        
+        with open(scorecard_path, 'r') as f:
+            scorecard = json.load(f)
+        
+        return jsonify(scorecard)
+    except Exception as e:
+        return jsonify({'error': f'Failed to load scorecard: {str(e)}'}), 500
+
+
+@app.route('/api/dieharder/available', methods=['GET'])
+def dieharder_available():
+    """Check if Dieharder results are available"""
+    try:
+        dieharder_dir = Path(__file__).parent / "dieharder"
+        scorecard_path = dieharder_dir / "dieharder-results" / "scorecard.json"
+        qse_report_path = dieharder_dir / "dieharder-results" / "qse" / "report.json"
+        system_report_path = dieharder_dir / "dieharder-results" / "system" / "report.json"
+        
+        has_scorecard = scorecard_path.exists()
+        has_qse = qse_report_path.exists()
+        has_system = system_report_path.exists()
+        
+        return jsonify({
+            'available': has_scorecard or (has_qse and has_system),
+            'has_scorecard': has_scorecard,
+            'has_qse_report': has_qse,
+            'has_system_report': has_system,
+        })
+    except Exception as e:
+        return jsonify({
+            'available': False,
+            'reason': str(e)
+        })
+
+
+@app.route('/api/dieharder/run-tests', methods=['POST'])
+def dieharder_run_tests():
+    """
+    Run Dieharder pipeline using run_pipeline_auto.sh script.
+    This runs the full end-to-end pipeline automatically:
+    1. Generate QSE + System entropy
+    2. Concatenate into single files
+    3. Run dieharder for both (automated)
+    4. Parse reports, compare, generate scorecard
+    """
+    data = request.json
+    sequences = int(data.get('sequences', 100))
+    seq_length_bits = int(data.get('seq_length_bits', 1_000_000))
+    endpoint = data.get('endpoint', '').strip()
+    
+    if not endpoint:
+        return jsonify({'error': 'QSE endpoint is required'}), 400
+    
+    dieharder_dir = Path(__file__).parent / "dieharder"
+    script_path = dieharder_dir / "run_pipeline_auto.sh"
+    
+    if not script_path.exists():
+        return jsonify({'error': f'Automated pipeline script not found: {script_path}'}), 500
+    
+    # Check for dieharder binary
+    dieharder_bin = Path(__file__).parent / "dieharder" / "dieharder" / "dieharder"
+    if not dieharder_bin.exists():
+        # Try system-wide dieharder
+        if not shutil.which('dieharder'):
+            return jsonify({
+                'error': 'Dieharder binary not found. Build it in dieharder/dieharder/ or install system-wide.'
+            }), 500
+    
+    # Prepare environment with the endpoint
+    # Ensure it ends with /get for the API
+    endpoint_for_env = endpoint.rstrip('/')
+    if not endpoint_for_env.endswith('/get'):
+        endpoint_for_env = endpoint_for_env + '/get'
+    
+    env = os.environ.copy()
+    env['ENTROPY_ENDPOINT'] = endpoint_for_env
+    # Force unbuffered output for Python scripts
+    env['PYTHONUNBUFFERED'] = '1'
+    
+    # Build command - try to use stdbuf for line buffering (may not be available on macOS)
+    # Fallback to regular bash if stdbuf fails
+    output_lines = []
+    
+    try:
+        app.logger.info(f"Running Dieharder pipeline script: {script_path}")
+        app.logger.info(f"ENTROPY_ENDPOINT={endpoint_for_env}")
+        
+        # Try with stdbuf first (for better real-time output)
+        # If stdbuf is not available, fall back to regular execution
+        try:
+            # Check if stdbuf is available
+            subprocess.run(['which', 'stdbuf'], check=True, capture_output=True)
+            use_stdbuf = True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            use_stdbuf = False
+        
+        if use_stdbuf:
+            cmd = [
+                'stdbuf', '-oL', '-eL',  # Line buffered stdout and stderr
+                'bash',
+                str(script_path),
+                '--seq-length', str(seq_length_bits),
+                '--sequences', str(sequences),
+            ]
+        else:
+            cmd = [
+                'bash',
+                str(script_path),
+                '--seq-length', str(seq_length_bits),
+                '--sequences', str(sequences),
+            ]
+        
+        app.logger.info(f"Command: {' '.join(cmd)}")
+        
+        # Run the script and capture output with line buffering
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=str(dieharder_dir),
+            env=env,
+            text=True,
+            bufsize=1,  # Line buffered
+        )
+        
+        # Read output line by line - capture ALL lines
+        line_count = 0
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                if process.poll() is not None:
+                    break
+                continue
+            line = line.rstrip('\n\r')
+            output_lines.append(line)
+            line_count += 1
+            app.logger.info(f"[Dieharder] {line}")
+            # Log every 100 lines to track progress
+            if line_count % 100 == 0:
+                app.logger.info(f"[Dieharder] Captured {line_count} output lines so far...")
+        
+        # Ensure process is fully terminated
+        return_code = process.wait()
+        app.logger.info(f"[Dieharder] Process completed. Total lines captured: {len(output_lines)}, Exit code: {return_code}")
+        
+        app.logger.info(f"Pipeline finished with exit code: {process.returncode}")
+        
+        # Check if scorecard was generated (success indicator)
+        scorecard_path = dieharder_dir / "dieharder-results" / "scorecard.json"
+        scorecard = None
+        
+        if scorecard_path.exists():
+            with open(scorecard_path, 'r') as f:
+                scorecard = json.load(f)
+        
+        # Return results
+        app.logger.info(f"[Dieharder] Returning {len(output_lines)} output lines to frontend")
+        return jsonify({
+            'success': scorecard is not None,
+            'exit_code': process.returncode,
+            'output': output_lines,
+            'output_line_count': len(output_lines),  # Help frontend verify all output was received
+            'scorecard': scorecard,
+            'scorecard_path': str(scorecard_path) if scorecard else None,
+        })
+        
+    except Exception as e:
+        import traceback
+        app.logger.error(f"Pipeline error: {e}")
+        return jsonify({
+            'error': f'Failed to run Dieharder pipeline: {str(e)}',
+            'output': output_lines,
+            'traceback': traceback.format_exc() if app.debug else None
+        }), 500
+
+
+@app.route('/api/dieharder/report-html', methods=['GET'])
+def dieharder_report_html():
+    """Serve the generated HTML scorecard report"""
+    dieharder_dir = Path(__file__).parent / "dieharder"
+    report_path = dieharder_dir / "dieharder-results" / "scorecard.html"
+    
+    if not report_path.exists():
+        return "<html><body><h1>Report Not Found</h1><p>No scorecard.html has been generated yet. Please run the Dieharder pipeline first.</p></body></html>", 404
     
     # Read and serve the HTML file
     with open(report_path, 'r') as f:

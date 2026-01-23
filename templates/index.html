@@ -551,6 +551,7 @@
             <button class="tab-button" onclick="showTab('rsa')">RSA Shared Prime</button>
             <button class="tab-button" onclick="showTab('qrng-simple')">QRNG Key Derivation</button>
             <button class="tab-button" onclick="showTab('sts')">NIST STS Results</button>
+            <button class="tab-button" onclick="showTab('dieharder')">Dieharder Results</button>
         </div>
 
         <!-- Entropy Effectiveness Demo -->
@@ -847,6 +848,82 @@
                 </div>
             </div>
         </div>
+
+        <!-- Dieharder Demo -->
+        <div id="dieharder-panel" class="demo-panel">
+            <h2>Dieharder Entropy Comparison</h2>
+            <p style="margin-bottom: 20px; color: #666;">
+                View Dieharder random number test suite results comparing QSE quantum entropy vs. system entropy.
+            </p>
+
+            <div id="dieharder-loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading Dieharder results...</p>
+            </div>
+
+            <div id="dieharder-status" class="status-log" style="display: none;"></div>
+
+            <div id="dieharder-results" class="results" style="display: none;">
+                <!-- Scorecard will be rendered here -->
+            </div>
+
+            <!-- Report link - shown after successful run or when results exist -->
+            <div id="dieharder-report-link" style="display: none; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border: 2px solid #28a745; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(40,167,69,0.2);">
+                <div style="font-size: 2em; margin-bottom: 10px;">📊</div>
+                <strong style="color: #155724; font-size: 1.1em;">Dieharder Report Available</strong>
+                <p style="color: #155724; margin: 10px 0; font-size: 0.9em;">View the complete HTML scorecard with detailed test results</p>
+                <a href="/api/dieharder/report-html" target="_blank" class="btn btn-primary" style="background: #28a745; border-color: #28a745; display: inline-block; padding: 12px 30px; font-size: 1.1em;">
+                    📄 Open Full HTML Report
+                </a>
+            </div>
+
+            <div id="dieharder-run-tests" style="margin-top: 30px; display: none;">
+                <div class="result-card">
+                    <h3>Run New Dieharder Tests</h3>
+                    <p style="margin-bottom: 20px; color: #666;">
+                        Generate new entropy sequences and run Dieharder tests. This may take several minutes.
+                    </p>
+
+                    <div class="params-grid">
+                        <div class="input-group">
+                            <label for="dieharder-sequences">Number of Sequences:</label>
+                            <input type="number" id="dieharder-sequences" value="100" min="10" max="1000">
+                        </div>
+                        <div class="input-group">
+                            <label for="dieharder-seq-length">Sequence Length (bits):</label>
+                            <input type="number" id="dieharder-seq-length" value="1000000" min="100000" max="10000000" step="100000">
+                        </div>
+                    </div>
+
+                    <div class="input-group" id="dieharder-endpoint-group" style="margin-top: 15px;">
+                        <label for="dieharder-endpoint">QSE Entropy API Endpoint:</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="dieharder-endpoint" placeholder="http://api.example.com:8888/entropy" autocomplete="off" style="flex: 1; padding-right: 45px;" value="">
+                            <button type="button" id="dieharder-endpoint-toggle" onclick="toggleDieharderEndpointVisibility()" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.2em; color: #7F3D97; padding: 5px;" title="Show/Hide endpoint">
+                                👁️
+                            </button>
+                        </div>
+                        <small style="display: block; margin-top: 5px; color: #666;">API format: endpoint/get/125k (script adds /get automatically)</small>
+                    </div>
+                    
+                    <div class="alert" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin-top: 15px; font-size: 0.9em;">
+                        <strong>⏱️ Note:</strong> The pipeline generates both QSE and System entropy, runs Dieharder (100+ statistical tests), and compares results. This takes approximately <strong>10-30 minutes</strong> for 100 sequences.
+                    </div>
+
+                    <div class="button-group" style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="runDieharderTests()">🚀 Run Full Pipeline</button>
+                        <button class="btn btn-secondary" onclick="loadDieharderResults()">📊 Reload Results</button>
+                    </div>
+
+                    <div id="dieharder-test-progress" style="display: none; margin-top: 20px;">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="dieharder-test-progress-bar" style="width: 0%">0%</div>
+                        </div>
+                        <div id="dieharder-test-progress-text" style="text-align: center; margin-top: 10px; color: #666;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -862,9 +939,22 @@
                 button.textContent = '👁️';
             }
         }
+        
+        function toggleDieharderEndpointVisibility() {
+            const input = document.getElementById('dieharder-endpoint');
+            const button = document.getElementById('dieharder-endpoint-toggle');
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
 
         // Tab switching
         let stsTabLoaded = false;
+        let dieharderTabLoaded = false;
         function showTab(tabName) {
             // Hide all panels
             document.querySelectorAll('.demo-panel').forEach(panel => {
@@ -886,6 +976,12 @@
             if (tabName === 'sts' && !stsTabLoaded) {
                 stsTabLoaded = true;
                 setTimeout(() => loadSTSResults(), 100);
+            }
+            
+            // Auto-load Dieharder results when Dieharder tab is first shown
+            if (tabName === 'dieharder' && !dieharderTabLoaded) {
+                dieharderTabLoaded = true;
+                setTimeout(() => loadDieharderResults(), 100);
             }
         }
 
@@ -1929,6 +2025,360 @@
                 addStatusLog('sts-status', `❌ Error: ${error.message}`, 'error');
                 updateProgress(0, 'Failed');
                 results.innerHTML = `<div class="alert alert-danger">Error running STS pipeline: ${error.message}</div>`;
+                results.style.display = 'block';
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Dieharder Demo Functions
+        async function loadDieharderResults() {
+            const loading = document.getElementById('dieharder-loading');
+            const results = document.getElementById('dieharder-results');
+            const statusLog = document.getElementById('dieharder-status');
+            const runTests = document.getElementById('dieharder-run-tests');
+            const reportLink = document.getElementById('dieharder-report-link');
+            
+            loading.classList.add('active');
+            results.style.display = 'none';
+            if (reportLink) reportLink.style.display = 'none';
+            
+            try {
+                // Check if results are available
+                const availableResp = await fetch('/api/dieharder/available');
+                const available = await availableResp.json();
+                
+                if (!available.available) {
+                    results.innerHTML = '<div class="alert alert-info">No Dieharder results found. Use the form below to run new tests.</div>';
+                    results.style.display = 'block';
+                    runTests.style.display = 'block';
+                    loading.classList.remove('active');
+                    return;
+                }
+                
+                // Load scorecard
+                const response = await fetch('/api/dieharder/scorecard');
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        results.innerHTML = '<div class="alert alert-info">No scorecard found. Run Dieharder tests to generate one.</div>';
+                        results.style.display = 'block';
+                        runTests.style.display = 'block';
+                        loading.classList.remove('active');
+                        return;
+                    }
+                    throw new Error(`Failed to load scorecard: ${response.statusText}`);
+                }
+                
+                const scorecard = await response.json();
+                displayDieharderResults(scorecard);
+                runTests.style.display = 'block';
+                
+                // Ensure status log stays visible
+                if (statusLog) {
+                    statusLog.style.display = 'block';
+                }
+                
+                // Show report link if results are loaded
+                if (reportLink) reportLink.style.display = 'block';
+                
+            } catch (error) {
+                statusLog.innerHTML = `<div class="status-log-entry error">Error: ${error.message}</div>`;
+                statusLog.style.display = 'block';
+                results.innerHTML = `<div class="alert alert-danger">Error loading Dieharder results: ${error.message}</div>`;
+                results.style.display = 'block';
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function displayDieharderResults(scorecard) {
+            const results = document.getElementById('dieharder-results');
+            
+            const qsePass = scorecard.qse_summary.overall_pass;
+            const sysPass = scorecard.system_summary.overall_pass;
+            const winner = scorecard.overall.winner;
+            const winnerText = winner === 'tie' ? 'Tie' : (winner === 'qse' ? 'QSE' : 'System');
+            
+            let html = '<div class="result-card" style="background: #e3f2fd; border-left-color: #2196F3; margin-bottom: 20px;">';
+            html += `<h3 style="color: #1976D2;">${scorecard.headline_verdict}</h3>`;
+            html += '</div>';
+            
+            // Summary cards
+            html += '<div class="comparison-grid" style="margin-bottom: 20px;">';
+            
+            // QSE card
+            html += '<div class="comparison-card ' + (qsePass ? 'qrng' : 'weak') + '">';
+            html += '<h4>QSE Entropy</h4>';
+            html += `<div class="result-item"><strong>Overall:</strong> <span class="stat-badge ${qsePass ? 'success' : 'danger'}">${qsePass ? 'PASS' : 'FAIL'}</span></div>`;
+            html += `<div class="result-item"><strong>Passed Tests:</strong> ${scorecard.qse_summary.passed_tests}/${scorecard.qse_summary.total_tests}</div>`;
+            html += `<div class="result-item"><strong>Weak Tests:</strong> ${scorecard.qse_summary.weak_tests}</div>`;
+            html += `<div class="result-item"><strong>Failed Tests:</strong> ${scorecard.qse_summary.failed_tests}</div>`;
+            html += '</div>';
+            
+            // System card
+            html += '<div class="comparison-card ' + (sysPass ? 'info' : 'weak') + '">';
+            html += '<h4>System Entropy</h4>';
+            html += `<div class="result-item"><strong>Overall:</strong> <span class="stat-badge ${sysPass ? 'success' : 'danger'}">${sysPass ? 'PASS' : 'FAIL'}</span></div>`;
+            html += `<div class="result-item"><strong>Passed Tests:</strong> ${scorecard.system_summary.passed_tests}/${scorecard.system_summary.total_tests}</div>`;
+            html += `<div class="result-item"><strong>Weak Tests:</strong> ${scorecard.system_summary.weak_tests}</div>`;
+            html += `<div class="result-item"><strong>Failed Tests:</strong> ${scorecard.system_summary.failed_tests}</div>`;
+            html += '</div>';
+            
+            // Winner card
+            html += '<div class="comparison-card info">';
+            html += '<h4>Comparison</h4>';
+            html += `<div class="result-item"><strong>Winner:</strong> <span class="stat-badge ${winner === 'qse' ? 'success' : (winner === 'system' ? 'info' : 'neutral')}">${winnerText}</span></div>`;
+            html += `<div class="result-item"><strong>QSE Wins:</strong> ${scorecard.wins_by_test.qse}</div>`;
+            html += `<div class="result-item"><strong>System Wins:</strong> ${scorecard.wins_by_test.system}</div>`;
+            html += `<div class="result-item"><strong>Ties:</strong> ${scorecard.wins_by_test.tie}</div>`;
+            html += '</div>';
+            
+            html += '</div>';
+            
+            // Comparison table
+            html += '<div class="result-card">';
+            html += '<h3>Per-Test Comparison</h3>';
+            html += '<table style="width: 100%; border-collapse: collapse; margin-top: 15px;">';
+            html += '<thead><tr style="background: #f1f5f9;">';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Test</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">QSE P-value</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">QSE Assessment</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">System P-value</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">System Assessment</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Winner</th>';
+            html += '</tr></thead><tbody>';
+            
+            scorecard.comparisons.forEach(comp => {
+                const w = comp.winner;
+                const wClass = w === 'qse' ? 'winner-qse' : (w === 'system' ? 'winner-system' : 'winner-tie');
+                const wLabel = w === 'qse' ? 'QSE' : (w === 'system' ? 'System' : 'Tie');
+                const wColor = w === 'qse' ? '#27ae60' : (w === 'system' ? '#3498db' : '#666');
+                
+                const qseBadge = comp.qse.assessment === 'PASSED' ? '<span class="stat-badge success">PASSED</span>' : 
+                                comp.qse.assessment === 'WEAK' ? '<span class="stat-badge warning">WEAK</span>' : 
+                                '<span class="stat-badge danger">FAILED</span>';
+                const sysBadge = comp.system.assessment === 'PASSED' ? '<span class="stat-badge success">PASSED</span>' : 
+                                comp.system.assessment === 'WEAK' ? '<span class="stat-badge warning">WEAK</span>' : 
+                                '<span class="stat-badge danger">FAILED</span>';
+                
+                html += '<tr>';
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>${comp.test_name}</strong></td>`;
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${comp.qse.p_value.toFixed(6)}</td>`;
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${qseBadge}</td>`;
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${comp.system.p_value.toFixed(6)}</td>`;
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${sysBadge}</td>`;
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0; color: ${wColor}; font-weight: bold;">${wLabel}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            html += '</div>';
+            
+            // Key risks section
+            html += '<div class="result-card">';
+            html += '<h3>Key Risks / Weakest Tests</h3>';
+            html += '<table style="width: 100%; border-collapse: collapse; margin-top: 15px;">';
+            html += '<thead><tr style="background: #f1f5f9;">';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Source</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Weakest Test</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">P-value</th>';
+            html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Assessment</th>';
+            html += '</tr></thead><tbody>';
+            
+            html += '<tr>';
+            html += '<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>QSE</strong></td>';
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.test_name}</td>`;
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.p_value.toFixed(6)}</td>`;
+            const qseWeakBadge = scorecard.qse_weakest_test.assessment === 'PASSED' ? '<span class="stat-badge success">PASSED</span>' : 
+                                scorecard.qse_weakest_test.assessment === 'WEAK' ? '<span class="stat-badge warning">WEAK</span>' : 
+                                '<span class="stat-badge danger">FAILED</span>';
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${qseWeakBadge}</td>`;
+            html += '</tr>';
+            
+            html += '<tr>';
+            html += '<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>System</strong></td>';
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.test_name}</td>`;
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.p_value.toFixed(6)}</td>`;
+            const sysWeakBadge = scorecard.system_weakest_test.assessment === 'PASSED' ? '<span class="stat-badge success">PASSED</span>' : 
+                                scorecard.system_weakest_test.assessment === 'WEAK' ? '<span class="stat-badge warning">WEAK</span>' : 
+                                '<span class="stat-badge danger">FAILED</span>';
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${sysWeakBadge}</td>`;
+            html += '</tr>';
+            
+            html += '</tbody></table>';
+            html += '<div style="margin-top: 10px; font-size: 0.9em; color: #666;">';
+            html += 'Note: Dieharder evaluates statistical randomness. It does not alone certify cryptographic strength or "quantum resilience."';
+            html += '</div>';
+            html += '</div>';
+            
+            results.innerHTML = html;
+            results.style.display = 'block';
+        }
+
+        async function runDieharderTests() {
+            const sequences = parseInt(document.getElementById('dieharder-sequences').value);
+            const seqLength = parseInt(document.getElementById('dieharder-seq-length').value);
+            const endpoint = document.getElementById('dieharder-endpoint').value.trim();
+            
+            if (!endpoint) {
+                alert('QSE endpoint is required');
+                return;
+            }
+            
+            const loading = document.getElementById('dieharder-loading');
+            const statusLog = document.getElementById('dieharder-status');
+            const progress = document.getElementById('dieharder-test-progress');
+            const progressBar = document.getElementById('dieharder-test-progress-bar');
+            const progressText = document.getElementById('dieharder-test-progress-text');
+            const results = document.getElementById('dieharder-results');
+            const reportLink = document.getElementById('dieharder-report-link');
+            
+            loading.classList.add('active');
+            statusLog.innerHTML = '';
+            statusLog.style.display = 'block';
+            progress.style.display = 'block';
+            results.style.display = 'none';
+            reportLink.style.display = 'none';
+            
+            // Helper to update progress
+            function updateProgress(percent, text) {
+                progressBar.style.width = percent + '%';
+                progressBar.textContent = percent + '%';
+                progressText.textContent = text;
+            }
+            
+            addStatusLog('dieharder-status', '🚀 Starting Dieharder Pipeline...', 'info');
+            addStatusLog('dieharder-status', `Parameters: ${sequences} sequences, ${seqLength} bits/sequence`, 'info');
+            // Calculate estimated time based on sequences (roughly 6-18 seconds per sequence)
+            const minMinutes = Math.ceil((sequences * 6) / 60);
+            const maxMinutes = Math.ceil((sequences * 18) / 60);
+            addStatusLog('dieharder-status', `⏳ Estimated time: ${minMinutes}-${maxMinutes} minutes for ${sequences} sequences. Please wait...`, 'info');
+            addStatusLog('dieharder-status', '📡 Pipeline is running... All terminal output will be displayed here when complete.', 'info');
+            addStatusLog('dieharder-status', '─'.repeat(50), 'info');
+            
+            try {
+                updateProgress(5, 'Starting pipeline script...');
+                
+                const response = await fetch('/api/dieharder/run-tests', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        sequences: sequences,
+                        seq_length_bits: seqLength,
+                        endpoint: endpoint
+                    })
+                });
+                
+                // Check response status first
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                console.log('Response received:', {
+                    success: data.success,
+                    exit_code: data.exit_code,
+                    output_length: data.output ? data.output.length : 0,
+                    output_line_count: data.output_line_count || 0,
+                    has_error: !!data.error
+                });
+                
+                // Verify we received all output
+                if (data.output_line_count && data.output && data.output.length !== data.output_line_count) {
+                    console.warn(`Output count mismatch: received ${data.output.length} lines, expected ${data.output_line_count}`);
+                }
+                
+                addStatusLog('dieharder-status', '─'.repeat(50), 'info');
+                addStatusLog('dieharder-status', '📥 Pipeline completed. Displaying full terminal output...', 'success');
+                addStatusLog('dieharder-status', '─'.repeat(50), 'info');
+                
+                // Show all output from the script
+                if (data.output && Array.isArray(data.output)) {
+                    console.log('Received output lines:', data.output.length);
+                    
+                    let displayedCount = 0;
+                    
+                    // Display ALL lines from the output (including empty lines for formatting)
+                    data.output.forEach((line, index) => {
+                        // Detect step progress from output
+                        if (line.includes('Step 1/8') || line.includes('📥 Step 1/8')) {
+                            updateProgress(12, 'Step 1/8: Generating QSE entropy...');
+                        } else if (line.includes('Step 2/8') || line.includes('🖥️  Step 2/8')) {
+                            updateProgress(25, 'Step 2/8: Generating System entropy...');
+                        } else if (line.includes('Step 3/8') || line.includes('🔗 Step 3/8')) {
+                            updateProgress(37, 'Step 3/8: Combining QSE sequences...');
+                        } else if (line.includes('Step 4/8') || line.includes('🔗 Step 4/8')) {
+                            updateProgress(43, 'Step 4/8: Combining System sequences...');
+                        } else if (line.includes('Step 5/8') || line.includes('⚙️  Step 5/8')) {
+                            updateProgress(50, 'Step 5/8: Running Dieharder for QSE (10-30 min)...');
+                        } else if (line.includes('Step 6/8') || line.includes('⚙️  Step 6/8')) {
+                            updateProgress(68, 'Step 6/8: Running Dieharder for System (10-30 min)...');
+                        } else if (line.includes('Step 7/8') || line.includes('📊 Step 7/8')) {
+                            updateProgress(85, 'Step 7/8: Parsing Dieharder reports...');
+                        } else if (line.includes('Step 8/8') || line.includes('📈 Step 8/8')) {
+                            updateProgress(93, 'Step 8/8: Generating comparison & scorecard...');
+                        } else if (line.includes('PIPELINE COMPLETE') || line.includes('🎉 PIPELINE COMPLETE')) {
+                            updateProgress(100, '🎉 Pipeline Complete!');
+                        }
+                        
+                        // Determine styling based on content
+                        let logType = 'info';
+                        if (line.includes('✅') || line.includes('🎉') || line.includes('Done') || line.includes('complete') || line.includes('Complete')) logType = 'success';
+                        else if (line.includes('❌') || line.includes('Error') || line.includes('Failed') || line.includes('ERROR')) logType = 'error';
+                        else if (line.includes('⚠️') || line.includes('Warning') || line.includes('ℹ️')) logType = 'warning';
+                        
+                        // Add line to status log without timestamp for cleaner terminal look
+                        addStatusLog('dieharder-status', line || ' ', logType, false);
+                        displayedCount++;
+                    });
+                    
+                    // Add summary at the end
+                    addStatusLog('dieharder-status', '─'.repeat(50), 'info');
+                    addStatusLog('dieharder-status', `✅ Complete terminal output displayed (${displayedCount} lines total)`, 'success');
+                    
+                    // Ensure we're scrolled to the bottom to see the latest output
+                    setTimeout(() => {
+                        const statusContainer = document.getElementById('dieharder-status');
+                        if (statusContainer) {
+                            statusContainer.scrollTop = statusContainer.scrollHeight;
+                        }
+                    }, 100);
+                    
+                    if (data.output.length === 0) {
+                        addStatusLog('dieharder-status', '⚠️ Pipeline returned no output lines', 'warning');
+                    }
+                } else {
+                    console.error('No output array in response:', data);
+                    addStatusLog('dieharder-status', '⚠️ No output received from pipeline (response: ' + JSON.stringify(data).substring(0, 200) + '...)', 'warning');
+                }
+                
+                if (!response.ok || data.error) {
+                    throw new Error(data.error || `Pipeline failed with exit code ${data.exit_code}`);
+                }
+                
+                if (data.success) {
+                    addStatusLog('dieharder-status', '─'.repeat(50), 'info');
+                    addStatusLog('dieharder-status', '✅ Pipeline completed successfully!', 'success');
+                    updateProgress(100, '🎉 Complete!');
+                    
+                    // Show report link
+                    reportLink.style.display = 'block';
+                    
+                    // Reload results
+                    setTimeout(() => {
+                        loadDieharderResults();
+                    }, 500);
+                } else {
+                    throw new Error('Pipeline did not generate scorecard');
+                }
+                
+            } catch (error) {
+                addStatusLog('dieharder-status', '─'.repeat(50), 'info');
+                addStatusLog('dieharder-status', `❌ Error: ${error.message}`, 'error');
+                updateProgress(0, 'Failed');
+                results.innerHTML = `<div class="alert alert-danger">Error running Dieharder pipeline: ${error.message}</div>`;
                 results.style.display = 'block';
             } finally {
                 loading.classList.remove('active');
