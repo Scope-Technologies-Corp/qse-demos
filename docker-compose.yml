@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  qse-demos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qse-demos
+    ports:
+      - "5001:5001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Add your QSE endpoint here if needed
+      # - ENTROPY_ENDPOINT=http://your-api:8888/entropy
+    volumes:
+      # Optional: Mount results directories to persist data
+      - ./sts-2.1.2/sts-results:/app/sts-2.1.2/sts-results
+      - ./dieharder/dieharder-results:/app/dieharder/dieharder-results
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
