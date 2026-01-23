@@ -1,27 +1,27 @@
 {
-  "generated_at": "2026-01-22T00:10:40.154338Z",
+  "generated_at": "2026-01-23T05:10:33.961309Z",
   "config": {
     "alpha": 0.01,
     "sequences": 100,
     "sequence_length_bits": 1000000,
     "input_mode": "binary"
   },
-  "headline_verdict": "System entropy passes NIST STS while QSE entropy did not meet all thresholds.",
+  "headline_verdict": "Both sources pass NIST STS; QSE shows slightly stronger margins across tests.",
   "overall": {
-    "qse_overall_pass": false,
+    "qse_overall_pass": true,
     "system_overall_pass": true,
-    "winner": "system",
+    "winner": "qse",
     "win_counts": {
-      "qse": 6,
-      "system": 9,
+      "qse": 8,
+      "system": 7,
       "tie": 0
     }
   },
   "qse_summary": {
     "total_tests": 188,
-    "passed_tests": 186,
-    "failed_tests": 2,
-    "overall_pass": false
+    "passed_tests": 188,
+    "failed_tests": 0,
+    "overall_pass": true
   },
   "system_summary": {
     "total_tests": 187,
@@ -30,17 +30,17 @@
     "overall_pass": true
   },
   "qse_weakest_test": {
-    "test_name": "*  NonOverlappingTemplate",
-    "p_value_uniformity": 0.334538,
-    "passed": 95,
+    "test_name": "NonOverlappingTemplate",
+    "p_value_uniformity": 0.048716,
+    "passed": 97,
     "total": 100,
-    "pass_rate": 95.0,
+    "pass_rate": 97.0,
     "min_required": 96,
-    "meets_threshold": false
+    "meets_threshold": true
   },
   "system_weakest_test": {
     "test_name": "NonOverlappingTemplate",
-    "p_value_uniformity": 0.474986,
+    "p_value_uniformity": 0.262249,
     "passed": 96,
     "total": 100,
     "pass_rate": 96.0,
@@ -49,62 +49,26 @@
   },
   "qse_lowest_uniformity_test": {
     "test_name": "NonOverlappingTemplate",
-    "p_value_uniformity": 0.00716,
+    "p_value_uniformity": 0.025193,
+    "passed": 98,
+    "total": 100,
+    "pass_rate": 98.0,
+    "min_required": 96,
+    "meets_threshold": true
+  },
+  "system_lowest_uniformity_test": {
+    "test_name": "NonOverlappingTemplate",
+    "p_value_uniformity": 0.010237,
     "passed": 100,
     "total": 100,
     "pass_rate": 100.0,
     "min_required": 96,
     "meets_threshold": true
   },
-  "system_lowest_uniformity_test": {
-    "test_name": "NonOverlappingTemplate",
-    "p_value_uniformity": 0.003712,
-    "passed": 99,
-    "total": 100,
-    "pass_rate": 99.0,
-    "min_required": 96,
-    "meets_threshold": true
-  },
   "qse_borderline_tests": [
     {
-      "test_name": "Rank",
-      "p_value_uniformity": 0.851383,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.935716,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.739918,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.798139,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.455937,
+      "test_name": "LongestRun",
+      "p_value_uniformity": 0.834308,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -122,7 +86,7 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.719747,
+      "p_value_uniformity": 0.048716,
       "passed": 97,
       "total": 100,
       "pass_rate": 97.0,
@@ -131,16 +95,7 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.935716,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.145326,
+      "p_value_uniformity": 0.514124,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -149,25 +104,7 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.955835,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.779188,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.616305,
+      "p_value_uniformity": 0.999438,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -177,249 +114,15 @@
     {
       "test_name": "NonOverlappingTemplate",
       "p_value_uniformity": 0.025193,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.455937,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
       "min_required": 96,
       "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.23681,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.23681,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.816537,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.191687,
-      "passed": 96,
-      "total": 100,
-      "pass_rate": 96.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.897763,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "*  NonOverlappingTemplate",
-      "p_value_uniformity": 0.759756,
-      "passed": 95,
-      "total": 100,
-      "pass_rate": 95.0,
-      "min_required": 96,
-      "meets_threshold": false
     },
     {
       "test_name": "NonOverlappingTemplate",
       "p_value_uniformity": 0.383827,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.637119,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.779188,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.616305,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.759756,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.637119,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.055361,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.739918,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.574903,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.115387,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.055361,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.946308,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.213309,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.145326,
-      "passed": 96,
-      "total": 100,
-      "pass_rate": 96.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.851383,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.964295,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "*  NonOverlappingTemplate",
-      "p_value_uniformity": 0.334538,
-      "passed": 95,
-      "total": 100,
-      "pass_rate": 95.0,
-      "min_required": 96,
-      "meets_threshold": false
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.911413,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.699313,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.574903,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -437,170 +140,6 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.191687,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.474986,
-      "passed": 96,
-      "total": 100,
-      "pass_rate": 96.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.739918,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.657933,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.719747,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.191687,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.759756,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "OverlappingTemplate",
-      "p_value_uniformity": 0.437274,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "Universal",
-      "p_value_uniformity": 0.616305,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "RandomExcursions",
-      "p_value_uniformity": 0.500934,
-      "passed": 59,
-      "total": 62,
-      "pass_rate": 95.16129032258065,
-      "min_required": 58,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "LinearComplexity",
-      "p_value_uniformity": 0.816537,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    }
-  ],
-  "system_borderline_tests": [
-    {
-      "test_name": "LongestRun",
-      "p_value_uniformity": 0.366918,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "Rank",
-      "p_value_uniformity": 0.637119,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "FFT",
-      "p_value_uniformity": 0.971699,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.574903,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.55442,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.911413,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.779188,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
       "p_value_uniformity": 0.419021,
       "passed": 98,
       "total": 100,
@@ -610,169 +149,7 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.181557,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.739918,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.249284,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.080519,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.474986,
-      "passed": 96,
-      "total": 100,
-      "pass_rate": 96.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.080519,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.350485,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.637119,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.474986,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.779188,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.020548,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.181557,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.474986,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.275709,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.066882,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.637119,
-      "passed": 97,
-      "total": 100,
-      "pass_rate": 97.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.366918,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.262249,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.816537,
+      "p_value_uniformity": 0.883171,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -790,7 +167,7 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.574903,
+      "p_value_uniformity": 0.739918,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -799,7 +176,360 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.55442,
+      "p_value_uniformity": 0.224821,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.983453,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.924076,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.699313,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.366918,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.851383,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.055361,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.595549,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.514124,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.474986,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.657933,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.213309,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.455937,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.191687,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.262249,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.062821,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.657933,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.987896,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.383827,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.946308,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.834308,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.983453,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.096578,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.897763,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "ApproximateEntropy",
+      "p_value_uniformity": 0.455937,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursions",
+      "p_value_uniformity": 0.202268,
+      "passed": 52,
+      "total": 53,
+      "pass_rate": 98.11320754716981,
+      "min_required": 50,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursions",
+      "p_value_uniformity": 0.275709,
+      "passed": 52,
+      "total": 53,
+      "pass_rate": 98.11320754716981,
+      "min_required": 50,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.924076,
+      "passed": 52,
+      "total": 53,
+      "pass_rate": 98.11320754716981,
+      "min_required": 50,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.071177,
+      "passed": 52,
+      "total": 53,
+      "pass_rate": 98.11320754716981,
+      "min_required": 50,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.162606,
+      "passed": 52,
+      "total": 53,
+      "pass_rate": 98.11320754716981,
+      "min_required": 50,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.595549,
+      "passed": 51,
+      "total": 53,
+      "pass_rate": 96.22641509433963,
+      "min_required": 50,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.334538,
+      "passed": 51,
+      "total": 53,
+      "pass_rate": 96.22641509433963,
+      "min_required": 50,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "LinearComplexity",
+      "p_value_uniformity": 0.851383,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    }
+  ],
+  "system_borderline_tests": [
+    {
+      "test_name": "Frequency",
+      "p_value_uniformity": 0.514124,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "BlockFrequency",
+      "p_value_uniformity": 0.616305,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "CumulativeSums",
+      "p_value_uniformity": 0.616305,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "CumulativeSums",
+      "p_value_uniformity": 0.162606,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "LongestRun",
+      "p_value_uniformity": 0.213309,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "Rank",
+      "p_value_uniformity": 0.437274,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.883171,
       "passed": 96,
       "total": 100,
       "pass_rate": 96.0,
@@ -808,7 +538,214 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.090936,
+      "p_value_uniformity": 0.935716,
+      "passed": 96,
+      "total": 100,
+      "pass_rate": 96.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.911413,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.759756,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.474986,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.955835,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.419021,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.719747,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.798139,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.514124,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.153763,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.037566,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.162606,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.474986,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.048716,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.834308,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.249284,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.437274,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.137282,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.071177,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.080519,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.834308,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.637119,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.051942,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.816537,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -826,7 +763,7 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.437274,
+      "p_value_uniformity": 0.657933,
       "passed": 98,
       "total": 100,
       "pass_rate": 98.0,
@@ -835,24 +772,15 @@
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.911413,
-      "passed": 98,
+      "p_value_uniformity": 0.262249,
+      "passed": 96,
       "total": 100,
-      "pass_rate": 98.0,
+      "pass_rate": 96.0,
       "min_required": 96,
       "meets_threshold": true
     },
     {
       "test_name": "NonOverlappingTemplate",
-      "p_value_uniformity": 0.699313,
-      "passed": 98,
-      "total": 100,
-      "pass_rate": 98.0,
-      "min_required": 96,
-      "meets_threshold": true
-    },
-    {
-      "test_name": "OverlappingTemplate",
       "p_value_uniformity": 0.971699,
       "passed": 98,
       "total": 100,
@@ -861,8 +789,8 @@
       "meets_threshold": true
     },
     {
-      "test_name": "Universal",
-      "p_value_uniformity": 0.401199,
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.137282,
       "passed": 97,
       "total": 100,
       "pass_rate": 97.0,
@@ -870,61 +798,232 @@
       "meets_threshold": true
     },
     {
-      "test_name": "RandomExcursions",
-      "p_value_uniformity": 0.568055,
-      "passed": 60,
-      "total": 62,
-      "pass_rate": 96.7741935483871,
-      "min_required": 58,
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.383827,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.987896,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.419021,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.153763,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.924076,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.153763,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.637119,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.759756,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.657933,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.991468,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "p_value_uniformity": 0.080519,
+      "passed": 97,
+      "total": 100,
+      "pass_rate": 97.0,
+      "min_required": 96,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "OverlappingTemplate",
+      "p_value_uniformity": 0.779188,
+      "passed": 98,
+      "total": 100,
+      "pass_rate": 98.0,
+      "min_required": 96,
       "meets_threshold": true
     },
     {
       "test_name": "RandomExcursions",
-      "p_value_uniformity": 0.888137,
-      "passed": 60,
-      "total": 62,
-      "pass_rate": 96.7741935483871,
-      "min_required": 58,
+      "p_value_uniformity": 0.55442,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursions",
+      "p_value_uniformity": 0.102526,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursions",
+      "p_value_uniformity": 0.366918,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
       "meets_threshold": true
     },
     {
       "test_name": "RandomExcursionsVariant",
-      "p_value_uniformity": 0.862344,
-      "passed": 60,
-      "total": 62,
-      "pass_rate": 96.7741935483871,
-      "min_required": 58,
+      "p_value_uniformity": 0.401199,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
       "meets_threshold": true
     },
     {
       "test_name": "RandomExcursionsVariant",
-      "p_value_uniformity": 0.500934,
-      "passed": 60,
-      "total": 62,
-      "pass_rate": 96.7741935483871,
-      "min_required": 58,
+      "p_value_uniformity": 0.678686,
+      "passed": 57,
+      "total": 59,
+      "pass_rate": 96.61016949152543,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.016717,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.145326,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.016717,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.759756,
+      "passed": 57,
+      "total": 59,
+      "pass_rate": 96.61016949152543,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.275709,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
+      "meets_threshold": true
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "p_value_uniformity": 0.275709,
+      "passed": 58,
+      "total": 59,
+      "pass_rate": 98.30508474576271,
+      "min_required": 56,
       "meets_threshold": true
     }
   ],
   "wins_by_test": {
-    "qse": 6,
-    "system": 9,
+    "qse": 8,
+    "system": 7,
     "tie": 0
   },
   "comparisons": [
     {
       "test_name": "ApproximateEntropy",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.075719,
-        "passed": 99,
+        "pass_rate": 98.0,
+        "p_value_uniformity": 0.455937,
+        "passed": 98,
         "total": 100,
-        "margin": 3,
+        "margin": 2,
         "meets_threshold": true
       },
       "system": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.048716,
+        "p_value_uniformity": 0.066882,
         "passed": 100,
         "total": 100,
         "margin": 4,
@@ -932,66 +1031,16 @@
       },
       "winner": "system",
       "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": 0.027003,
-        "margin": -1
+        "pass_rate": -2.0,
+        "p_value_uniformity": 0.389055,
+        "margin": -2
       }
     },
     {
       "test_name": "BlockFrequency",
       "qse": {
         "pass_rate": 99.0,
-        "p_value_uniformity": 0.911413,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.494392,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
-        "meets_threshold": true
-      },
-      "winner": "system",
-      "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": 0.417021,
-        "margin": -1
-      }
-    },
-    {
-      "test_name": "CumulativeSums",
-      "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.779188,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.678686,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
-        "meets_threshold": true
-      },
-      "winner": "system",
-      "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": 0.100502,
-        "margin": -1
-      }
-    },
-    {
-      "test_name": "FFT",
-      "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.739918,
+        "p_value_uniformity": 0.171867,
         "passed": 99,
         "total": 100,
         "margin": 3,
@@ -999,7 +1048,7 @@
       },
       "system": {
         "pass_rate": 98.0,
-        "p_value_uniformity": 0.971699,
+        "p_value_uniformity": 0.616305,
         "passed": 98,
         "total": 100,
         "margin": 2,
@@ -1008,7 +1057,57 @@
       "winner": "qse",
       "delta": {
         "pass_rate": 1.0,
-        "p_value_uniformity": -0.231781,
+        "p_value_uniformity": -0.444438,
+        "margin": 1
+      }
+    },
+    {
+      "test_name": "CumulativeSums",
+      "qse": {
+        "pass_rate": 99.0,
+        "p_value_uniformity": 0.719747,
+        "passed": 99,
+        "total": 100,
+        "margin": 3,
+        "meets_threshold": true
+      },
+      "system": {
+        "pass_rate": 98.0,
+        "p_value_uniformity": 0.162606,
+        "passed": 98,
+        "total": 100,
+        "margin": 2,
+        "meets_threshold": true
+      },
+      "winner": "qse",
+      "delta": {
+        "pass_rate": 1.0,
+        "p_value_uniformity": 0.557141,
+        "margin": 1
+      }
+    },
+    {
+      "test_name": "FFT",
+      "qse": {
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.401199,
+        "passed": 100,
+        "total": 100,
+        "margin": 4,
+        "meets_threshold": true
+      },
+      "system": {
+        "pass_rate": 99.0,
+        "p_value_uniformity": 0.759756,
+        "passed": 99,
+        "total": 100,
+        "margin": 3,
+        "meets_threshold": true
+      },
+      "winner": "qse",
+      "delta": {
+        "pass_rate": 1.0,
+        "p_value_uniformity": -0.358557,
         "margin": 1
       }
     },
@@ -1016,15 +1115,40 @@
       "test_name": "Frequency",
       "qse": {
         "pass_rate": 99.0,
-        "p_value_uniformity": 0.401199,
+        "p_value_uniformity": 0.657933,
         "passed": 99,
         "total": 100,
         "margin": 3,
         "meets_threshold": true
       },
       "system": {
+        "pass_rate": 98.0,
+        "p_value_uniformity": 0.514124,
+        "passed": 98,
+        "total": 100,
+        "margin": 2,
+        "meets_threshold": true
+      },
+      "winner": "qse",
+      "delta": {
+        "pass_rate": 1.0,
+        "p_value_uniformity": 0.143809,
+        "margin": 1
+      }
+    },
+    {
+      "test_name": "LinearComplexity",
+      "qse": {
+        "pass_rate": 97.0,
+        "p_value_uniformity": 0.851383,
+        "passed": 97,
+        "total": 100,
+        "margin": 1,
+        "meets_threshold": true
+      },
+      "system": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.678686,
+        "p_value_uniformity": 0.017912,
         "passed": 100,
         "total": 100,
         "margin": 4,
@@ -1032,41 +1156,141 @@
       },
       "winner": "system",
       "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": -0.277487,
-        "margin": -1
+        "pass_rate": -3.0,
+        "p_value_uniformity": 0.833471,
+        "margin": -3
       }
     },
     {
-      "test_name": "LinearComplexity",
+      "test_name": "LongestRun",
       "qse": {
         "pass_rate": 98.0,
-        "p_value_uniformity": 0.816537,
+        "p_value_uniformity": 0.834308,
         "passed": 98,
         "total": 100,
         "margin": 2,
         "meets_threshold": true
       },
       "system": {
+        "pass_rate": 98.0,
+        "p_value_uniformity": 0.213309,
+        "passed": 98,
+        "total": 100,
+        "margin": 2,
+        "meets_threshold": true
+      },
+      "winner": "qse",
+      "delta": {
+        "pass_rate": 0.0,
+        "p_value_uniformity": 0.620999,
+        "margin": 0
+      }
+    },
+    {
+      "test_name": "NonOverlappingTemplate",
+      "qse": {
+        "pass_rate": 97.0,
+        "p_value_uniformity": 0.897763,
+        "passed": 97,
+        "total": 100,
+        "margin": 1,
+        "meets_threshold": true
+      },
+      "system": {
+        "pass_rate": 97.0,
+        "p_value_uniformity": 0.080519,
+        "passed": 97,
+        "total": 100,
+        "margin": 1,
+        "meets_threshold": true
+      },
+      "winner": "qse",
+      "delta": {
+        "pass_rate": 0.0,
+        "p_value_uniformity": 0.817244,
+        "margin": 0
+      }
+    },
+    {
+      "test_name": "OverlappingTemplate",
+      "qse": {
         "pass_rate": 99.0,
-        "p_value_uniformity": 0.051942,
+        "p_value_uniformity": 0.616305,
         "passed": 99,
         "total": 100,
         "margin": 3,
         "meets_threshold": true
       },
-      "winner": "system",
+      "system": {
+        "pass_rate": 98.0,
+        "p_value_uniformity": 0.779188,
+        "passed": 98,
+        "total": 100,
+        "margin": 2,
+        "meets_threshold": true
+      },
+      "winner": "qse",
       "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": 0.764595,
-        "margin": -1
+        "pass_rate": 1.0,
+        "p_value_uniformity": -0.162883,
+        "margin": 1
       }
     },
     {
-      "test_name": "LongestRun",
+      "test_name": "RandomExcursions",
       "qse": {
         "pass_rate": 100.0,
+        "p_value_uniformity": 0.181557,
+        "passed": 53,
+        "total": 53,
+        "margin": 3,
+        "meets_threshold": true
+      },
+      "system": {
+        "pass_rate": 100.0,
         "p_value_uniformity": 0.595549,
+        "passed": 59,
+        "total": 59,
+        "margin": 3,
+        "meets_threshold": true
+      },
+      "winner": "system",
+      "delta": {
+        "pass_rate": 0.0,
+        "p_value_uniformity": -0.413992,
+        "margin": 0
+      }
+    },
+    {
+      "test_name": "RandomExcursionsVariant",
+      "qse": {
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.437274,
+        "passed": 53,
+        "total": 53,
+        "margin": 3,
+        "meets_threshold": true
+      },
+      "system": {
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.514124,
+        "passed": 59,
+        "total": 59,
+        "margin": 3,
+        "meets_threshold": true
+      },
+      "winner": "system",
+      "delta": {
+        "pass_rate": 0.0,
+        "p_value_uniformity": -0.07685,
+        "margin": 0
+      }
+    },
+    {
+      "test_name": "Rank",
+      "qse": {
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.883171,
         "passed": 100,
         "total": 100,
         "margin": 4,
@@ -1074,7 +1298,7 @@
       },
       "system": {
         "pass_rate": 98.0,
-        "p_value_uniformity": 0.366918,
+        "p_value_uniformity": 0.437274,
         "passed": 98,
         "total": 100,
         "margin": 2,
@@ -1083,23 +1307,23 @@
       "winner": "qse",
       "delta": {
         "pass_rate": 2.0,
-        "p_value_uniformity": 0.228631,
+        "p_value_uniformity": 0.445897,
         "margin": 2
       }
     },
     {
-      "test_name": "NonOverlappingTemplate",
+      "test_name": "Runs",
       "qse": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.759756,
-        "passed": 98,
+        "pass_rate": 99.0,
+        "p_value_uniformity": 0.289667,
+        "passed": 99,
         "total": 100,
-        "margin": 2,
+        "margin": 3,
         "meets_threshold": true
       },
       "system": {
         "pass_rate": 99.0,
-        "p_value_uniformity": 0.334538,
+        "p_value_uniformity": 0.719747,
         "passed": 99,
         "total": 100,
         "margin": 3,
@@ -1107,184 +1331,59 @@
       },
       "winner": "system",
       "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": 0.425218,
-        "margin": -1
-      }
-    },
-    {
-      "test_name": "OverlappingTemplate",
-      "qse": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.437274,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.971699,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
-        "meets_threshold": true
-      },
-      "winner": "system",
-      "delta": {
         "pass_rate": 0.0,
-        "p_value_uniformity": -0.534425,
-        "margin": 0
-      }
-    },
-    {
-      "test_name": "RandomExcursions",
-      "qse": {
-        "pass_rate": 98.38709677419355,
-        "p_value_uniformity": 0.32418,
-        "passed": 61,
-        "total": 62,
-        "margin": 3,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 98.38709677419355,
-        "p_value_uniformity": 0.23276,
-        "passed": 61,
-        "total": 62,
-        "margin": 3,
-        "meets_threshold": true
-      },
-      "winner": "qse",
-      "delta": {
-        "pass_rate": 0.0,
-        "p_value_uniformity": 0.09142,
-        "margin": 0
-      }
-    },
-    {
-      "test_name": "RandomExcursionsVariant",
-      "qse": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.500934,
-        "passed": 62,
-        "total": 62,
-        "margin": 4,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.739918,
-        "passed": 62,
-        "total": 62,
-        "margin": 4,
-        "meets_threshold": true
-      },
-      "winner": "system",
-      "delta": {
-        "pass_rate": 0.0,
-        "p_value_uniformity": -0.238984,
-        "margin": 0
-      }
-    },
-    {
-      "test_name": "Rank",
-      "qse": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.851383,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.637119,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
-        "meets_threshold": true
-      },
-      "winner": "qse",
-      "delta": {
-        "pass_rate": 0.0,
-        "p_value_uniformity": 0.214264,
-        "margin": 0
-      }
-    },
-    {
-      "test_name": "Runs",
-      "qse": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.058984,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.987896,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
-        "meets_threshold": true
-      },
-      "winner": "system",
-      "delta": {
-        "pass_rate": 0.0,
-        "p_value_uniformity": -0.928912,
+        "p_value_uniformity": -0.43008,
         "margin": 0
       }
     },
     {
       "test_name": "Serial",
       "qse": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.816537,
-        "passed": 100,
+        "pass_rate": 99.0,
+        "p_value_uniformity": 0.383827,
+        "passed": 99,
         "total": 100,
-        "margin": 4,
+        "margin": 3,
         "meets_threshold": true
       },
       "system": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.494392,
+        "p_value_uniformity": 0.171867,
         "passed": 100,
         "total": 100,
         "margin": 4,
         "meets_threshold": true
       },
-      "winner": "qse",
+      "winner": "system",
       "delta": {
-        "pass_rate": 0.0,
-        "p_value_uniformity": 0.322145,
-        "margin": 0
+        "pass_rate": -1.0,
+        "p_value_uniformity": 0.21196,
+        "margin": -1
       }
     },
     {
       "test_name": "Universal",
       "qse": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.616305,
-        "passed": 98,
+        "pass_rate": 99.0,
+        "p_value_uniformity": 0.514124,
+        "passed": 99,
         "total": 100,
-        "margin": 2,
+        "margin": 3,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 97.0,
-        "p_value_uniformity": 0.401199,
-        "passed": 97,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.275709,
+        "passed": 100,
         "total": 100,
-        "margin": 1,
+        "margin": 4,
         "meets_threshold": true
       },
-      "winner": "qse",
+      "winner": "system",
       "delta": {
-        "pass_rate": 1.0,
-        "p_value_uniformity": 0.215106,
-        "margin": 1
+        "pass_rate": -1.0,
+        "p_value_uniformity": 0.238415,
+        "margin": -1
       }
     }
   ]

@@ -149,24 +149,24 @@
         <h1 class="title">NIST STS Entropy Scorecard</h1>
         <div class="subtitle">
           STS SP 800-22 • α = 0.01 • 100 sequences × 1,000,000 bits • Binary mode<br/>
-          Generated: 2026-01-22 00:10 UTC
+          Generated: 2026-01-23 05:10 UTC
         </div>
       </div>
       <div style="text-align:right">
-        <span class="badge" style="background:#b45309;">CHECK</span><br/>
-        <div class="small">Winner: <b>System</b></div>
+        <span class="badge" style="background:#0f766e;">PASS</span><br/>
+        <div class="small">Winner: <b>QSE</b></div>
       </div>
     </div>
 
     <div class="callout">
-      <b>Headline Verdict:</b> System entropy passes NIST STS while QSE entropy did not meet all thresholds.
+      <b>Headline Verdict:</b> Both sources pass NIST STS; QSE shows slightly stronger margins across tests.
     </div>
 
     <div class="grid">
       <div class="card">
         <h3>QSE Overall</h3>
-        <p class="value"><span class="badge" style="background:#b91c1c;">FAIL</span></p>
-        <div class="muted">Passed Tests: 186/188</div>
+        <p class="value"><span class="badge" style="background:#0f766e;">PASS</span></p>
+        <div class="muted">Passed Tests: 188/188</div>
       </div>
 
       <div class="card">
@@ -177,7 +177,7 @@
 
       <div class="card">
         <h3>Wins by Test</h3>
-        <p class="value">6 QSE • 9 System</p>
+        <p class="value">8 QSE • 7 System</p>
         <div class="muted">0 ties</div>
       </div>
     </div>
@@ -194,16 +194,16 @@
         </tr>
         <tr>
           <td><b>QSE</b></td>
-          <td>*  NonOverlappingTemplate</td>
-          <td>95/100 (95.00%)</td>
-          <td>0.334538</td>
-          <td>-1</td>
+          <td>NonOverlappingTemplate</td>
+          <td>97/100 (97.00%)</td>
+          <td>0.048716</td>
+          <td>1</td>
         </tr>
         <tr>
           <td><b>System</b></td>
           <td>NonOverlappingTemplate</td>
           <td>96/100 (96.00%)</td>
-          <td>0.474986</td>
+          <td>0.262249</td>
           <td>0</td>
         </tr>
       </table>
@@ -226,137 +226,137 @@
 
         <tr>
           <td>ApproximateEntropy</td>
-          <td>99/100 (99.00%)</td>
-          <td>0.075719</td>
+          <td>98/100 (98.00%)</td>
+          <td>0.455937</td>
           <td>100/100 (100.00%)</td>
-          <td>0.048716</td>
+          <td>0.066882</td>
           <td class="winner-system">System</td>
         </tr>
 
         <tr>
           <td>BlockFrequency</td>
           <td>99/100 (99.00%)</td>
-          <td>0.911413</td>
-          <td>100/100 (100.00%)</td>
-          <td>0.494392</td>
-          <td class="winner-system">System</td>
+          <td>0.171867</td>
+          <td>98/100 (98.00%)</td>
+          <td>0.616305</td>
+          <td class="winner-qse">QSE</td>
         </tr>
 
         <tr>
           <td>CumulativeSums</td>
           <td>99/100 (99.00%)</td>
-          <td>0.779188</td>
-          <td>100/100 (100.00%)</td>
-          <td>0.678686</td>
-          <td class="winner-system">System</td>
+          <td>0.719747</td>
+          <td>98/100 (98.00%)</td>
+          <td>0.162606</td>
+          <td class="winner-qse">QSE</td>
         </tr>
 
         <tr>
           <td>FFT</td>
+          <td>100/100 (100.00%)</td>
+          <td>0.401199</td>
           <td>99/100 (99.00%)</td>
-          <td>0.739918</td>
-          <td>98/100 (98.00%)</td>
-          <td>0.971699</td>
+          <td>0.759756</td>
           <td class="winner-qse">QSE</td>
         </tr>
 
         <tr>
           <td>Frequency</td>
           <td>99/100 (99.00%)</td>
-          <td>0.401199</td>
-          <td>100/100 (100.00%)</td>
-          <td>0.678686</td>
-          <td class="winner-system">System</td>
+          <td>0.657933</td>
+          <td>98/100 (98.00%)</td>
+          <td>0.514124</td>
+          <td class="winner-qse">QSE</td>
         </tr>
 
         <tr>
           <td>LinearComplexity</td>
-          <td>98/100 (98.00%)</td>
-          <td>0.816537</td>
-          <td>99/100 (99.00%)</td>
-          <td>0.051942</td>
+          <td>97/100 (97.00%)</td>
+          <td>0.851383</td>
+          <td>100/100 (100.00%)</td>
+          <td>0.017912</td>
           <td class="winner-system">System</td>
         </tr>
 
         <tr>
           <td>LongestRun</td>
-          <td>100/100 (100.00%)</td>
-          <td>0.595549</td>
           <td>98/100 (98.00%)</td>
-          <td>0.366918</td>
+          <td>0.834308</td>
+          <td>98/100 (98.00%)</td>
+          <td>0.213309</td>
           <td class="winner-qse">QSE</td>
         </tr>
 
         <tr>
           <td>NonOverlappingTemplate</td>
-          <td>98/100 (98.00%)</td>
-          <td>0.759756</td>
-          <td>99/100 (99.00%)</td>
-          <td>0.334538</td>
-          <td class="winner-system">System</td>
-        </tr>
-
-        <tr>
-          <td>OverlappingTemplate</td>
-          <td>98/100 (98.00%)</td>
-          <td>0.437274</td>
-          <td>98/100 (98.00%)</td>
-          <td>0.971699</td>
-          <td class="winner-system">System</td>
-        </tr>
-
-        <tr>
-          <td>RandomExcursions</td>
-          <td>61/62 (98.39%)</td>
-          <td>0.32418</td>
-          <td>61/62 (98.39%)</td>
-          <td>0.23276</td>
+          <td>97/100 (97.00%)</td>
+          <td>0.897763</td>
+          <td>97/100 (97.00%)</td>
+          <td>0.080519</td>
           <td class="winner-qse">QSE</td>
         </tr>
 
         <tr>
+          <td>OverlappingTemplate</td>
+          <td>99/100 (99.00%)</td>
+          <td>0.616305</td>
+          <td>98/100 (98.00%)</td>
+          <td>0.779188</td>
+          <td class="winner-qse">QSE</td>
+        </tr>
+
+        <tr>
+          <td>RandomExcursions</td>
+          <td>53/53 (100.00%)</td>
+          <td>0.181557</td>
+          <td>59/59 (100.00%)</td>
+          <td>0.595549</td>
+          <td class="winner-system">System</td>
+        </tr>
+
+        <tr>
           <td>RandomExcursionsVariant</td>
-          <td>62/62 (100.00%)</td>
-          <td>0.500934</td>
-          <td>62/62 (100.00%)</td>
-          <td>0.739918</td>
+          <td>53/53 (100.00%)</td>
+          <td>0.437274</td>
+          <td>59/59 (100.00%)</td>
+          <td>0.514124</td>
           <td class="winner-system">System</td>
         </tr>
 
         <tr>
           <td>Rank</td>
+          <td>100/100 (100.00%)</td>
+          <td>0.883171</td>
           <td>98/100 (98.00%)</td>
-          <td>0.851383</td>
-          <td>98/100 (98.00%)</td>
-          <td>0.637119</td>
+          <td>0.437274</td>
           <td class="winner-qse">QSE</td>
         </tr>
 
         <tr>
           <td>Runs</td>
-          <td>100/100 (100.00%)</td>
-          <td>0.058984</td>
-          <td>100/100 (100.00%)</td>
-          <td>0.987896</td>
+          <td>99/100 (99.00%)</td>
+          <td>0.289667</td>
+          <td>99/100 (99.00%)</td>
+          <td>0.719747</td>
           <td class="winner-system">System</td>
         </tr>
 
         <tr>
           <td>Serial</td>
+          <td>99/100 (99.00%)</td>
+          <td>0.383827</td>
           <td>100/100 (100.00%)</td>
-          <td>0.816537</td>
-          <td>100/100 (100.00%)</td>
-          <td>0.494392</td>
-          <td class="winner-qse">QSE</td>
+          <td>0.171867</td>
+          <td class="winner-system">System</td>
         </tr>
 
         <tr>
           <td>Universal</td>
-          <td>98/100 (98.00%)</td>
-          <td>0.616305</td>
-          <td>97/100 (97.00%)</td>
-          <td>0.401199</td>
-          <td class="winner-qse">QSE</td>
+          <td>99/100 (99.00%)</td>
+          <td>0.514124</td>
+          <td>100/100 (100.00%)</td>
+          <td>0.275709</td>
+          <td class="winner-system">System</td>
         </tr>
 
       </table>
