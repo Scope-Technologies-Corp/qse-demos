@@ -207,3 +207,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Dieharder source repository (external dependency)
+# Exclude the entire dieharder source, but keep our custom scripts
+dieharder/*
+!dieharder/*.py
+!dieharder/run_pipeline_auto.sh
+!dieharder/.gitignore
