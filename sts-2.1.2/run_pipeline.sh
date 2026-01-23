@@ -58,7 +58,7 @@ mkdir -p entropy-streams/qse entropy-streams/system data sts-results/qse sts-res
 # --- Step 1: generate QSE streams
 if [[ -z "${ENTROPY_ENDPOINT:-}" ]]; then
   echo "❌ ENTROPY_ENDPOINT is not set."
-  echo '   Example: export ENTROPY_ENDPOINT="http://scopesvr.fractalarmor.com:8888/entropy/get"'
+  echo '   Example: export ENTROPY_ENDPOINT="http://api.example.com:8888/entropy/get"'
   exit 1
 fi
 
@@ -164,7 +164,9 @@ python3 generate_scorecard.py \
   --qse "sts-results/qse/report.json" \
   --system "sts-results/system/report.json" \
   --comparison "sts-results/compare.json" \
-  --out "sts-results/scorecard.json"
+  --out "sts-results/scorecard.json" \
+  --sequences "${SEQUENCES}" \
+  --seq-length "${SEQ_LENGTH}"
 
 python3 render_scorecard_html.py \
   --scorecard "sts-results/scorecard.json" \

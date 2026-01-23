@@ -98,8 +98,8 @@ def fetch_bulk_hex(base_url: str, size_path: str) -> str:
     where size can be like "125k" for 125000 bytes or "100000" for 100000 bytes
     
     Examples:
-    - base_url="http://scopesvr.fractalarmor.com:8888/entropy", size="125k" 
-      -> "http://scopesvr.fractalarmor.com:8888/entropy/get/125k"
+    - base_url="http://api.example.com:8888/entropy", size="125k" 
+      -> "http://api.example.com:8888/entropy/get/125k"
     - base_url="http://api:8888/entropy/get", size="125k" 
       -> "http://api:8888/entropy/get/125k"
     """

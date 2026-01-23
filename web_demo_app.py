@@ -836,10 +836,12 @@ def sts_run_tests():
                 scorecard = json.load(f)
         
         # Return results
+        app.logger.info(f"[STS] Returning {len(output_lines)} output lines to frontend")
         return jsonify({
             'success': scorecard is not None,
             'exit_code': process.returncode,
             'output': output_lines,
+            'output_line_count': len(output_lines),  # Help frontend verify all output was received
             'scorecard': scorecard,
             'scorecard_path': str(scorecard_path) if scorecard else None,
         })

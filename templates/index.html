@@ -821,7 +821,7 @@
                     <div class="input-group" id="sts-endpoint-group" style="margin-top: 15px;">
                         <label for="sts-endpoint">QSE Entropy API Endpoint:</label>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="sts-endpoint" placeholder="http://scopesvr.fractalarmor.com:8888/entropy" autocomplete="off" style="flex: 1; padding-right: 45px;" value="http://scopesvr.fractalarmor.com:8888/entropy">
+                            <input type="password" id="sts-endpoint" placeholder="http://api.example.com:8888/entropy" autocomplete="off" style="flex: 1; padding-right: 45px;" value="">
                             <button type="button" id="sts-endpoint-toggle" onclick="toggleEndpointVisibility()" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.2em; color: #7F3D97; padding: 5px;" title="Show/Hide endpoint">
                                 👁️
                             </button>
@@ -1584,7 +1584,8 @@
             
             loading.classList.add('active');
             results.style.display = 'none';
-            statusLog.style.display = 'none';
+            // Keep status log visible - don't hide terminal output
+            // statusLog.style.display = 'none';
             if (reportLink) reportLink.style.display = 'none';
             
             try {
@@ -1616,6 +1617,11 @@
                 const scorecard = await response.json();
                 displaySTSResults(scorecard);
                 runTests.style.display = 'block';
+                
+                // Ensure status log stays visible (don't hide terminal output)
+                if (statusLog) {
+                    statusLog.style.display = 'block';
+                }
                 
                 // Show report link if results are loaded
                 if (reportLink) reportLink.style.display = 'block';
@@ -1778,17 +1784,15 @@
             
             addStatusLog('sts-status', '🚀 Starting NIST STS Pipeline...', 'info');
             addStatusLog('sts-status', `Parameters: ${sequences} sequences, ${seqLength} bits/sequence`, 'info');
-            addStatusLog('sts-status', `Endpoint: ${endpoint}`, 'info');
-            addStatusLog('sts-status', '⏳ This will take 10-30 minutes for 100 sequences. Please wait...', 'info');
-            addStatusLog('sts-status', '📡 Waiting for pipeline output (this may take a while)...', 'info');
+            // Calculate estimated time based on sequences (roughly 6-18 seconds per sequence)
+            const minMinutes = Math.ceil((sequences * 6) / 60);
+            const maxMinutes = Math.ceil((sequences * 18) / 60);
+            addStatusLog('sts-status', `⏳ Estimated time: ${minMinutes}-${maxMinutes} minutes for ${sequences} sequences. Please wait...`, 'info');
+            addStatusLog('sts-status', '📡 Pipeline is running... All terminal output will be displayed here when complete.', 'info');
             addStatusLog('sts-status', '─'.repeat(50), 'info');
             
             try {
                 updateProgress(5, 'Starting pipeline script...');
-                
-                // Run the pipeline script - this will take 10-30 minutes
-                // All output will be returned when the pipeline completes
-                addStatusLog('sts-status', '⏳ Pipeline is running... Output will appear below when available.', 'info');
                 
                 const response = await fetch('/api/sts/run-tests', {
                     method: 'POST',
@@ -1812,8 +1816,14 @@
                     success: data.success,
                     exit_code: data.exit_code,
                     output_length: data.output ? data.output.length : 0,
+                    output_line_count: data.output_line_count || 0,
                     has_error: !!data.error
                 });
+                
+                // Verify we received all output
+                if (data.output_line_count && data.output && data.output.length !== data.output_line_count) {
+                    console.warn(`Output count mismatch: received ${data.output.length} lines, expected ${data.output_line_count}`);
+                }
                 
                 // Clear the "waiting" message and show actual output
                 const statusContainer = document.getElementById('sts-status');
@@ -1826,7 +1836,7 @@
                 }
                 
                 addStatusLog('sts-status', '─'.repeat(50), 'info');
-                addStatusLog('sts-status', '📥 Pipeline output received. Displaying all output...', 'success');
+                addStatusLog('sts-status', '📥 Pipeline completed. Displaying full terminal output...', 'success');
                 addStatusLog('sts-status', '─'.repeat(50), 'info');
                 
                 // Show all output from the script
@@ -1837,7 +1847,9 @@
                         console.log('Last 10 lines:', data.output.slice(-10));
                     }
                     
-                    // Display ALL lines from the output
+                    let displayedCount = 0;
+                    
+                    // Display ALL lines from the output (including empty lines for formatting)
                     data.output.forEach((line, index) => {
                         // Detect step progress from output
                         if (line.includes('Step 1/8') || line.includes('📥 Step 1/8')) {
@@ -1867,9 +1879,22 @@
                         else if (line.includes('⚠️') || line.includes('Warning') || line.includes('ℹ️')) logType = 'warning';
                         
                         // Add line to status log without timestamp for cleaner terminal look
-                        // Display empty lines as well to preserve formatting
+                        // Display ALL lines including empty ones to preserve terminal formatting
                         addStatusLog('sts-status', line || ' ', logType, false);
+                        displayedCount++;
                     });
+                    
+                    // Add summary at the end
+                    addStatusLog('sts-status', '─'.repeat(50), 'info');
+                    addStatusLog('sts-status', `✅ Complete terminal output displayed (${displayedCount} lines total)`, 'success');
+                    
+                    // Ensure we're scrolled to the bottom to see the latest output
+                    setTimeout(() => {
+                        const statusContainer = document.getElementById('sts-status');
+                        if (statusContainer) {
+                            statusContainer.scrollTop = statusContainer.scrollHeight;
+                        }
+                    }, 100);
                     
                     if (data.output.length === 0) {
                         addStatusLog('sts-status', '⚠️ Pipeline returned no output lines', 'warning');

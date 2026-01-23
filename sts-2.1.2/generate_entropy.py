@@ -4,11 +4,11 @@ Generate NIST-ready entropy sequences (.bin) using bulk entropy endpoint or loca
 
 Usage:
     # QSE entropy (requires endpoint)
-    export ENTROPY_ENDPOINT="http://scopesvr.fractalarmor.com:8888/entropy"
+    export ENTROPY_ENDPOINT="http://api.example.com:8888/entropy"
     python3 generate_entropy.py --use qse --seq-length 1000000 --sequences 100
 
     # Or pass endpoint directly:
-    python3 generate_entropy.py --use qse --endpoint http://scopesvr.fractalarmor.com:8888/entropy --seq-length 1000000 --sequences 100
+    python3 generate_entropy.py --use qse --endpoint http://api.example.com:8888/entropy --seq-length 1000000 --sequences 100
 
     # Local system entropy
     python3 generate_entropy.py --use local --seq-length 1000000 --sequences 100
@@ -18,8 +18,8 @@ Output:
     entropy-streams/system/seq_0001_1000000bits.bin ... seq_0100_1000000bits.bin
 
 Note: The script automatically adds "/get" to the endpoint if not present.
-      e.g., "http://scopesvr.fractalarmor.com:8888/entropy" becomes
-            "http://scopesvr.fractalarmor.com:8888/entropy/get/125k"
+      e.g., "http://api.example.com:8888/entropy" becomes
+            "http://api.example.com:8888/entropy/get/125k"
 """
 
 import argparse
@@ -81,8 +81,8 @@ def fetch_bulk_hex(base_url: str, size_path: str) -> str:
     """
     GET entropy from: base_url/get/size_path
     
-    Example: base_url="http://scopesvr.fractalarmor.com:8888/entropy", size_path="125k"
-    Results in: http://scopesvr.fractalarmor.com:8888/entropy/get/125k
+    Example: base_url="http://api.example.com:8888/entropy", size_path="125k"
+    Results in: http://api.example.com:8888/entropy/get/125k
     
     Expected response: {"success": true, "response": "<hex>"}
     """
@@ -129,7 +129,7 @@ def main() -> int:
     parser.add_argument(
         "--endpoint",
         default=default_base_url,
-        help=f"Base endpoint (default: ${ENTROPY_ENDPOINT_ENV}). Example: http://scopesvr.fractalarmor.com:8888/entropy",
+        help=f"Base endpoint (default: ${ENTROPY_ENDPOINT_ENV}). Example: http://api.example.com:8888/entropy",
     )
 
     parser.add_argument(

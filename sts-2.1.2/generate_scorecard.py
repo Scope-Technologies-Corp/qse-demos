@@ -44,18 +44,24 @@ def main() -> int:
     parser.add_argument("--system", required=True, help="System report.json")
     parser.add_argument("--comparison", required=True, help="comparison.json")
     parser.add_argument("--out", required=True, help="Output scorecard.json path")
+    parser.add_argument("--sequences", type=int, help="Number of sequences tested (default: 100)")
+    parser.add_argument("--seq-length", type=int, help="Sequence length in bits (default: 1000000)")
     args = parser.parse_args()
 
     qse = load_json(args.qse)
     sys = load_json(args.system)
     comp = load_json(args.comparison)
 
+    # Use provided values or defaults
+    num_sequences = args.sequences if args.sequences is not None else 100
+    seq_length = args.seq_length if args.seq_length is not None else 1_000_000
+
     scorecard = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "config": {
             "alpha": 0.01,
-            "sequences": 100,
-            "sequence_length_bits": 1_000_000,
+            "sequences": num_sequences,
+            "sequence_length_bits": seq_length,
             "input_mode": "binary",
         },
         "headline_verdict": headline_verdict(qse, sys, comp),

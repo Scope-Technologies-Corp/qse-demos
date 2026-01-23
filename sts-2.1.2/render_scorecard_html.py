@@ -52,6 +52,25 @@ def main() -> int:
 
     winner = sc["overall"]["winner"]
     winner_text = "Tie" if winner == "tie" else ("QSE" if winner == "qse" else "System")
+    
+    # Get config values from scorecard (with fallbacks for older scorecards)
+    config = sc.get("config", {})
+    num_sequences = config.get("sequences", 100)
+    seq_length = config.get("sequence_length_bits", 1_000_000)
+    alpha = config.get("alpha", 0.01)
+    input_mode = config.get("input_mode", "binary")
+    
+    # Format sequence length with commas
+    seq_length_formatted = f"{seq_length:,}"
+    
+    # Get generated timestamp from scorecard or use current time
+    generated_at = sc.get("generated_at", datetime.utcnow().isoformat() + "Z")
+    try:
+        # Parse ISO format timestamp and format for display
+        dt = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+        generated_str = dt.strftime("%Y-%m-%d %H:%M UTC")
+    except:
+        generated_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 
     html = f"""
 <!doctype html>
@@ -203,8 +222,8 @@ def main() -> int:
       <div>
         <h1 class="title">NIST STS Entropy Scorecard</h1>
         <div class="subtitle">
-          STS SP 800-22 • α = 0.01 • 100 sequences × 1,000,000 bits • Binary mode<br/>
-          Generated: {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}
+          STS SP 800-22 • α = {alpha} • {num_sequences} sequences × {seq_length_formatted} bits • {input_mode.capitalize()} mode<br/>
+          Generated: {generated_str}
         </div>
       </div>
       <div style="text-align:right">

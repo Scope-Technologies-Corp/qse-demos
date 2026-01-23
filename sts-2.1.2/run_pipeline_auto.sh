@@ -12,7 +12,7 @@ Usage:
   ./run_pipeline_auto.sh --seq-length 1000000 --sequences 100
 
 Environment:
-  ENTROPY_ENDPOINT - Required. Example: http://scopesvr.fractalarmor.com:8888/entropy/get
+  ENTROPY_ENDPOINT - Required. Example: http://api.example.com:8888/entropy/get
 
 What it does (fully automated, no user input needed):
   1) Generate QSE entropy streams (.bin)
@@ -65,7 +65,7 @@ fi
 
 if [[ -z "${ENTROPY_ENDPOINT:-}" ]]; then
   echo "❌ ENTROPY_ENDPOINT is not set."
-  echo '   Example: export ENTROPY_ENDPOINT="http://scopesvr.fractalarmor.com:8888/entropy/get"'
+  echo '   Example: export ENTROPY_ENDPOINT="http://api.example.com:8888/entropy/get"'
   exit 1
 fi
 
@@ -230,7 +230,9 @@ python3 generate_scorecard.py \
   --qse "sts-results/qse/report.json" \
   --system "sts-results/system/report.json" \
   --comparison "sts-results/compare.json" \
-  --out "sts-results/scorecard.json"
+  --out "sts-results/scorecard.json" \
+  --sequences "${SEQUENCES}" \
+  --seq-length "${SEQ_LENGTH}"
 echo "✅ Created: sts-results/scorecard.json"
 
 echo "Rendering HTML report..."

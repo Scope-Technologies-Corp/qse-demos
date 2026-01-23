@@ -103,11 +103,34 @@ def main() -> int:
         win_counts[row["winner"]] += 1
 
     # Overall verdict
+    # Priority 1: If one passes and the other fails, the one that passes wins
+    # Priority 2: If both pass or both fail, compare by individual test wins
+    # Priority 3: If still tied, it's a tie
+    qse_overall_pass = qse["summary"]["overall_pass"]
+    sys_overall_pass = sys["summary"]["overall_pass"]
+    
     overall_winner = "tie"
-    if win_counts["qse"] > win_counts["system"]:
+    
+    if qse_overall_pass and not sys_overall_pass:
+        # QSE passes, System fails -> QSE wins
         overall_winner = "qse"
-    elif win_counts["system"] > win_counts["qse"]:
+    elif sys_overall_pass and not qse_overall_pass:
+        # System passes, QSE fails -> System wins
         overall_winner = "system"
+    elif qse_overall_pass and sys_overall_pass:
+        # Both pass - compare by individual test wins
+        if win_counts["qse"] > win_counts["system"]:
+            overall_winner = "qse"
+        elif win_counts["system"] > win_counts["qse"]:
+            overall_winner = "system"
+        # else: tie (both pass and equal wins)
+    else:
+        # Both fail - compare by individual test wins
+        if win_counts["qse"] > win_counts["system"]:
+            overall_winner = "qse"
+        elif win_counts["system"] > win_counts["qse"]:
+            overall_winner = "system"
+        # else: tie (both fail and equal wins)
 
     output = {
         "overall": {
