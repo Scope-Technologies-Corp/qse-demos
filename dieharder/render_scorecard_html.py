@@ -47,9 +47,9 @@ def main() -> int:
 
     qse_pass = sc["qse_summary"]["overall_pass"]
     sys_pass = sc["system_summary"]["overall_pass"]
-
-    overall_badge = badge("PASS", "pass") if (qse_pass and sys_pass) else badge("CHECK", "warn")
-
+    qse_failed = sc["qse_summary"]["failed_tests"]
+    sys_failed = sc["system_summary"]["failed_tests"]
+    
     winner = sc["overall"]["winner"]
     winner_text = "Tie" if winner == "tie" else ("QSE" if winner == "qse" else "System")
     
@@ -226,8 +226,8 @@ def main() -> int:
         </div>
       </div>
       <div style="text-align:right">
-        {overall_badge}<br/>
-        <div class="small">Winner: <b>{winner_text}</b></div>
+        <div style="font-size: 14px; font-weight: bold; color: #64748b; margin-bottom: 4px;">Winner</div>
+        <div style="font-size: 24px; font-weight: 800; color: #0f172a;">{winner_text}</div>
       </div>
     </div>
 
@@ -238,16 +238,14 @@ def main() -> int:
     <div class="grid">
       <div class="card">
         <h3>QSE Overall</h3>
-        <p class="value">{badge("PASS", "pass") if qse_pass else badge("FAIL", "fail")}</p>
-        <div class="muted">Passed: {sc["qse_summary"]["passed_tests"]}/{sc["qse_summary"]["total_tests"]}<br/>
-        Weak: {sc["qse_summary"]["weak_tests"]}, Failed: {sc["qse_summary"]["failed_tests"]}</div>
+        <p class="value" style="font-size: 20px; margin-bottom: 4px;">Passed: {sc["qse_summary"]["passed_tests"]}/{sc["qse_summary"]["total_tests"]}</p>
+        <div class="muted">Weak: {sc["qse_summary"]["weak_tests"]} • Failed: {sc["qse_summary"]["failed_tests"]}</div>
       </div>
 
       <div class="card">
         <h3>System Overall</h3>
-        <p class="value">{badge("PASS", "pass") if sys_pass else badge("FAIL", "fail")}</p>
-        <div class="muted">Passed: {sc["system_summary"]["passed_tests"]}/{sc["system_summary"]["total_tests"]}<br/>
-        Weak: {sc["system_summary"]["weak_tests"]}, Failed: {sc["system_summary"]["failed_tests"]}</div>
+        <p class="value" style="font-size: 20px; margin-bottom: 4px;">Passed: {sc["system_summary"]["passed_tests"]}/{sc["system_summary"]["total_tests"]}</p>
+        <div class="muted">Weak: {sc["system_summary"]["weak_tests"]} • Failed: {sc["system_summary"]["failed_tests"]}</div>
       </div>
 
       <div class="card">
@@ -280,7 +278,18 @@ def main() -> int:
         </tr>
       </table>
       <div class="small" style="margin-top:8px;">
-        Note: Dieharder evaluates statistical randomness. It does not alone certify cryptographic strength or "quantum resilience."
+        <b>Assessment Criteria:</b> Dieharder is a strength assessment tool, not a binary pass/fail test.
+        <ul style="margin: 8px 0 0 20px; padding: 0;">
+          <li><b>STRONG:</b> No failed tests and &lt;5% weak tests (some weak results are statistically expected with many tests)</li>
+          <li><b>REVIEW:</b> No failed tests but ≥5% weak tests (may indicate statistical variation or require further investigation)</li>
+          <li><b>WEAK:</b> One or more failed tests (p &lt; 0.0001 or p &gt; 0.9999) indicating potential randomness weaknesses</li>
+        </ul>
+        <div style="margin-top: 8px;">
+          <b>Test Reliability:</b> Some Dieharder tests have known issues. Tests marked "Do Not Use" (e.g., diehard_sums) are automatically excluded. Tests marked "Suspect" (e.g., diehard_operm5) are included but flagged below.
+        </div>
+        <div style="margin-top: 8px;">
+          Note: Dieharder evaluates statistical randomness. It does not alone certify cryptographic strength or "quantum resilience."
+        </div>
       </div>
     </div>
 
@@ -297,6 +306,10 @@ def main() -> int:
         </tr>
 """
 
+    # Build set of suspect test names for quick lookup
+    qse_suspect_names = {t["test_name"] for t in sc.get("qse_suspect_tests", [])}
+    sys_suspect_names = {t["test_name"] for t in sc.get("system_suspect_tests", [])}
+    
     for row in sc["comparisons"]:
         w = row["winner"]
         w_class = "winner-tie"
@@ -312,10 +325,16 @@ def main() -> int:
         sys_assessment = row["system"]["assessment"]
         qse_badge = badge(qse_assessment, "pass" if qse_assessment == "PASSED" else "warn" if qse_assessment == "WEAK" else "fail")
         sys_badge = badge(sys_assessment, "pass" if sys_assessment == "PASSED" else "warn" if sys_assessment == "WEAK" else "fail")
+        
+        # Flag suspect tests
+        test_name = row["test_name"]
+        is_suspect = test_name in qse_suspect_names or test_name in sys_suspect_names
+        suspect_marker = " ⚠️" if is_suspect else ""
+        suspect_style = ' style="background-color: #fef3c7;"' if is_suspect else ""
 
         html += f"""
-        <tr>
-          <td>{row["test_name"]}</td>
+        <tr{suspect_style}>
+          <td>{test_name}{suspect_marker}</td>
           <td>{row["qse"]["p_value"]}</td>
           <td>{qse_badge}</td>
           <td>{row["system"]["p_value"]}</td>
@@ -326,6 +345,89 @@ def main() -> int:
 
     html += """
       </table>
+      <div class="small" style="margin-top:8px;">
+        ⚠️ Tests marked with warning icon are "Suspect" per Dieharder documentation and may have known implementation issues.
+      </div>
+    </div>
+"""
+
+    # Add suspect tests section if any exist
+    qse_suspect = sc.get("qse_summary", {}).get("suspect_tests", 0)
+    sys_suspect = sc.get("system_summary", {}).get("suspect_tests", 0)
+    qse_suspect_list = sc.get("qse_suspect_tests", [])
+    sys_suspect_list = sc.get("system_suspect_tests", [])
+    
+    if qse_suspect > 0 or sys_suspect > 0 or qse_suspect_list or sys_suspect_list:
+        html += """
+    <div class="section">
+      <h2>⚠️ Suspect Tests (Known Issues)</h2>
+      <div class="callout" style="border-left-color: #b45309;">
+        <p><b>Note:</b> The following tests are marked as "Suspect" in Dieharder documentation due to known issues. For example, diehard_operm5 (-d 1) "seems to fail all generators in dieharder" and may have bugs in the original test implementation. Results from these tests should be interpreted with caution.</p>
+"""
+        if qse_suspect_list:
+            html += f"""
+        <p><b>QSE Suspect Tests ({len(qse_suspect_list)}):</b></p>
+        <ul style="margin: 4px 0 0 20px;">
+"""
+            for test in qse_suspect_list[:5]:  # Show first 5
+                test_name = test.get("test_name", "unknown") if isinstance(test, dict) else getattr(test, "test_name", "unknown")
+                p_val = test.get("p_value", "N/A") if isinstance(test, dict) else getattr(test, "p_value", "N/A")
+                html += f"""
+          <li>{test_name} (p-value: {p_val})</li>
+"""
+            if len(qse_suspect_list) > 5:
+                html += f"""
+          <li>... and {len(qse_suspect_list) - 5} more</li>
+"""
+            html += """
+        </ul>
+"""
+        if sys_suspect_list:
+            html += f"""
+        <p><b>System Suspect Tests ({len(sys_suspect_list)}):</b></p>
+        <ul style="margin: 4px 0 0 20px;">
+"""
+            for test in sys_suspect_list[:5]:  # Show first 5
+                test_name = test.get("test_name", "unknown") if isinstance(test, dict) else getattr(test, "test_name", "unknown")
+                p_val = test.get("p_value", "N/A") if isinstance(test, dict) else getattr(test, "p_value", "N/A")
+                html += f"""
+          <li>{test_name} (p-value: {p_val})</li>
+"""
+            if len(sys_suspect_list) > 5:
+                html += f"""
+          <li>... and {len(sys_suspect_list) - 5} more</li>
+"""
+            html += """
+        </ul>
+"""
+        html += """
+      </div>
+    </div>
+"""
+
+    html += """
+    <div class="section">
+      <h2>Understanding Dieharder Results</h2>
+      <div class="muted" style="line-height: 1.6;">
+        <p><b>Dieharder vs NIST STS:</b> Unlike NIST STS (which uses binary pass/fail criteria), Dieharder is a <b>strength assessment tool</b> that evaluates the distribution of p-values across multiple statistical tests. It is designed to "push a weak generator to unambiguous failure" rather than provide simple pass/fail results.</p>
+        <p><b>P-value Interpretation:</b> For a truly random source, p-values should follow a uniform distribution between 0 and 1. Individual WEAK results (p &lt; 0.005 or p &gt; 0.995) are statistically expected with many tests, as approximately 1% of p-values should naturally fall in this range.</p>
+        <p><b>Comparison Methodology:</b> When comparing two sources, the winner is determined by:</p>
+        <ol style="margin: 8px 0 0 20px;">
+          <li><b>Fewer FAILED tests</b> (p &lt; 0.0001 or p &gt; 0.9999) - most important indicator of randomness weaknesses</li>
+          <li><b>Fewer WEAK tests</b> (if same number of failed tests) - secondary concern</li>
+          <li><b>More PASSED tests</b> (if same failed/weak counts) - indicates overall strength</li>
+          <li><b>P-value distribution quality</b> (if all counts equal) - p-values closer to 0.5 indicate more uniform distribution</li>
+        </ol>
+        <p><b>Important:</b> Individual test-by-test wins are less meaningful than overall failure counts. A source with fewer FAILED tests is stronger, regardless of individual test comparisons.</p>
+        <p><b>Test Reliability:</b> Some Dieharder tests have known issues. Tests marked "Do Not Use" (e.g., diehard_sums) are automatically excluded from results. Tests marked "Suspect" (e.g., diehard_operm5) are included but flagged, as they may produce misleading results due to test implementation issues rather than generator weaknesses.</p>
+        <p><b>Assessment Levels:</b></p>
+        <ul style="margin: 8px 0 0 20px;">
+          <li><b>PASSED:</b> P-value between 0.005 and 0.995 (normal range)</li>
+          <li><b>WEAK:</b> P-value between 0.0001-0.005 or 0.995-0.9999 (borderline, may indicate statistical variation)</li>
+          <li><b>FAILED:</b> P-value &lt; 0.0001 or &gt; 0.9999 (extreme, indicates potential randomness weaknesses)</li>
+        </ul>
+        <p><b>Overall Assessment:</b> A source is considered STRONG if it has no FAILED tests and fewer than 5% WEAK tests. This accounts for expected statistical variation while flagging genuine concerns.</p>
+      </div>
     </div>
 
     <div class="section">
@@ -334,6 +436,7 @@ def main() -> int:
         • Run multiple independent batches (e.g., 5 runs) with newly generated data for both sources.<br/>
         • Increase sequences to 200–300 per run for stronger statistical confidence.<br/>
         • Track stability: count how often any test hits WEAK or FAILED across runs.<br/>
+        • If FAILED tests appear consistently, investigate the specific test and entropy source.<br/>
         • Archive all Dieharder reports and parameters for auditability.
       </div>
     </div>
