@@ -801,6 +801,20 @@
                 </a>
             </div>
 
+            <!-- Past Reports Section -->
+            <div id="sts-past-reports" style="margin-top: 30px; display: none;">
+                <div class="result-card">
+                    <h3>📚 Past Reports</h3>
+                    <p style="color: #666; margin-bottom: 15px;">View previously generated STS test reports</p>
+                    <div id="sts-past-reports-list" style="margin-top: 15px;">
+                        <div style="text-align: center; padding: 20px; color: #666;">
+                            <div class="spinner" style="margin: 0 auto;"></div>
+                            <p>Loading past reports...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="sts-run-tests" style="margin-top: 30px; display: none;">
                 <div class="result-card">
                     <h3>Run New STS Tests</h3>
@@ -835,7 +849,8 @@
                     </div>
 
                     <div class="button-group" style="margin-top: 20px;">
-                        <button class="btn btn-primary" onclick="runSTSTests()">🚀 Run Full Pipeline</button>
+                        <button class="btn btn-primary" id="sts-run-btn" onclick="runSTSTests()">🚀 Run Full Pipeline</button>
+                        <button class="btn btn-danger" id="sts-stop-btn" onclick="stopSTSTests()" style="display: none;">⏹️ Stop Pipeline</button>
                         <button class="btn btn-secondary" onclick="loadSTSResults()">📊 Reload Results</button>
                     </div>
 
@@ -877,6 +892,20 @@
                 </a>
             </div>
 
+            <!-- Past Reports Section -->
+            <div id="dieharder-past-reports" style="margin-top: 30px; display: none;">
+                <div class="result-card">
+                    <h3>📚 Past Reports</h3>
+                    <p style="color: #666; margin-bottom: 15px;">View previously generated Dieharder test reports</p>
+                    <div id="dieharder-past-reports-list" style="margin-top: 15px;">
+                        <div style="text-align: center; padding: 20px; color: #666;">
+                            <div class="spinner" style="margin: 0 auto;"></div>
+                            <p>Loading past reports...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="dieharder-run-tests" style="margin-top: 30px; display: none;">
                 <div class="result-card">
                     <h3>Run New Dieharder Tests</h3>
@@ -911,7 +940,8 @@
                     </div>
 
                     <div class="button-group" style="margin-top: 20px;">
-                        <button class="btn btn-primary" onclick="runDieharderTests()">🚀 Run Full Pipeline</button>
+                        <button class="btn btn-primary" id="dieharder-run-btn" onclick="runDieharderTests()">🚀 Run Full Pipeline</button>
+                        <button class="btn btn-danger" id="dieharder-stop-btn" onclick="stopDieharderTests()" style="display: none;">⏹️ Stop Pipeline</button>
                         <button class="btn btn-secondary" onclick="loadDieharderResults()">📊 Reload Results</button>
                     </div>
 
@@ -1722,6 +1752,9 @@
                 // Show report link if results are loaded
                 if (reportLink) reportLink.style.display = 'block';
                 
+                // Load past reports
+                loadSTSPastReports();
+                
             } catch (error) {
                 statusLog.innerHTML = `<div class="status-log-entry error">Error: ${error.message}</div>`;
                 statusLog.style.display = 'block';
@@ -1732,6 +1765,73 @@
             }
         }
 
+        // Test descriptions for tooltips
+        const STS_TEST_DESCRIPTIONS = {
+            'Frequency': 'Tests whether the proportion of zeros and ones in the sequence is approximately 1/2, as expected for a random sequence.',
+            'BlockFrequency': 'Tests whether the frequency of ones in M-bit blocks is approximately M/2, as expected for a random sequence.',
+            'CumulativeSums': 'Tests whether the cumulative sums of the partial sequences are too large or too small relative to what would be expected for a random sequence.',
+            'Runs': 'Tests whether the number of runs (uninterrupted sequences of identical bits) is as expected for a random sequence.',
+            'LongestRunOfOnes': 'Tests whether the longest run of ones within M-bit blocks is consistent with what would be expected for a random sequence.',
+            'Rank': 'Tests whether the rank of disjoint sub-matrices of the sequence is consistent with what would be expected for a random sequence.',
+            'FFT': 'Tests whether the discrete Fourier transform of the sequence contains an excess of periodic components relative to what would be expected for a random sequence.',
+            'NonOverlappingTemplate': 'Tests whether the number of occurrences of specific non-periodic patterns is consistent with what would be expected for a random sequence.',
+            'OverlappingTemplate': 'Tests whether the number of occurrences of a specific pattern is consistent with what would be expected for a random sequence.',
+            'Universal': 'Tests whether the sequence can be significantly compressed without loss of information, which would indicate non-randomness.',
+            'ApproximateEntropy': 'Tests whether the frequency of all possible overlapping m-bit patterns is approximately the same, as expected for a random sequence.',
+            'RandomExcursions': 'Tests whether the number of visits to a particular state within a cycle deviates from what would be expected for a random sequence.',
+            'RandomExcursionsVariant': 'Tests whether the number of visits to a particular state within a cycle deviates from what would be expected for a random sequence (variant).',
+            'Serial': 'Tests whether the frequency of all possible overlapping m-bit patterns is approximately the same, as expected for a random sequence.',
+            'LinearComplexity': 'Tests whether the linear complexity of the sequence is consistent with what would be expected for a random sequence.'
+        };
+        
+        const DIEHARDER_TEST_DESCRIPTIONS = {
+            'diehard_birthdays': 'Tests the spacing between random points on a large interval. The spacings should follow an exponential distribution for truly random data.',
+            'diehard_operm5': 'Tests overlapping permutations of 5 consecutive random numbers. All 120 possible orderings should occur with equal probability.',
+            'diehard_rank_32x32': 'Tests the rank of 32x32 binary matrices formed from random bits. Rank distribution should match expected values for random data.',
+            'diehard_rank_6x8': 'Tests the rank of 6x8 binary matrices formed from random bits. Rank distribution should match expected values for random data.',
+            'diehard_bitstream': 'Tests whether random bits can be compressed, which would indicate non-randomness. Truly random data should not be compressible.',
+            'diehard_opso': 'Tests overlapping pairs sparse occupancy. Checks if pairs of bits appear with expected frequency in random data.',
+            'diehard_oqso': 'Tests overlapping quadruples sparse occupancy. Checks if quadruples of bits appear with expected frequency in random data.',
+            'diehard_dna': 'Tests overlapping DNA sequences. Checks if DNA-like patterns appear with expected frequency in random data.',
+            'diehard_count_1s_str': 'Tests the count of ones in random strings. The distribution should match expected values for random data.',
+            'diehard_count_1s_byt': 'Tests the count of ones in random bytes. The distribution should match expected values for random data.',
+            'diehard_parking_lot': 'Tests random parking lot problem. Checks if random placements follow expected statistical distribution.',
+            'diehard_2dsphere': 'Tests minimum distance between random points on a 2D sphere. Distance distribution should match expected values.',
+            'diehard_3dsphere': 'Tests minimum distance between random points on a 3D sphere. Distance distribution should match expected values.',
+            'diehard_squeeze': 'Tests whether random numbers can be compressed, indicating non-randomness.',
+            'diehard_sums': 'Tests sums of random numbers. The distribution should match expected values (Note: This test has known issues and is excluded).',
+            'diehard_runs': 'Tests runs of consecutive identical values. Run lengths should follow expected distribution for random data.',
+            'diehard_craps': 'Tests simulated craps game outcomes. Win/loss distribution should match expected values for random data.',
+            'diehard_gcd': 'Tests greatest common divisor of pairs of random numbers. GCD distribution should match expected values.',
+            'diehard_rgb_lagged_sum': 'Tests lagged sums of RGB color values. Distribution should match expected values for random data.',
+            'diehard_rgb_kstest_test': 'Tests RGB color values using Kolmogorov-Smirnov test. Distribution should match expected values.',
+            'diehard_rgb_minimum_distance': 'Tests minimum distance between RGB color points. Distance distribution should match expected values.',
+            'diehard_rgb_permutations': 'Tests permutations of RGB color values. All permutations should occur with equal probability.',
+            'diehard_rgb_persist': 'Tests persistence of RGB color patterns. Patterns should not persist longer than expected in random data.',
+            'diehard_dab_bytedistrib': 'Tests byte distribution in random data. All byte values should appear with equal frequency.',
+            'diehard_dab_dct': 'Tests discrete cosine transform of random data. Transform coefficients should follow expected distribution.',
+            'diehard_dab_filltree': 'Tests tree filling with random data. Tree structure should match expected patterns for random data.',
+            'diehard_dab_filltree2': 'Tests tree filling with random data (variant 2). Tree structure should match expected patterns.',
+            'diehard_dab_monobit2': 'Tests monobit frequency in random data. Proportion of zeros and ones should be approximately equal.',
+            'diehard_dab_pairs': 'Tests pairs of random bytes. All byte pairs should appear with equal frequency.',
+            'diehard_dab_triplets': 'Tests triplets of random bytes. All byte triplets should appear with equal frequency.',
+            'diehard_dab_walk': 'Tests random walk properties. Walk characteristics should match expected values for random data.',
+            'diehard_marsaglia_tsang_gcd': 'Tests GCD of random numbers using Marsaglia-Tsang method. Distribution should match expected values.',
+            'diehard_marsaglia_tsang_gorilla': 'Tests gorilla test variant. Checks for patterns that would indicate non-randomness.',
+            'diehard_sts_monobit': 'Tests monobit frequency (NIST STS variant). Proportion of zeros and ones should be approximately equal.',
+            'diehard_sts_runs': 'Tests runs of consecutive identical values (NIST STS variant). Run lengths should follow expected distribution.',
+            'diehard_sts_serial': 'Tests serial patterns in random data (NIST STS variant). Pattern frequencies should match expected values.'
+        };
+        
+        function getTestDescription(testName, testSuite) {
+            if (testSuite === 'sts') {
+                return STS_TEST_DESCRIPTIONS[testName] || 'Statistical test for randomness evaluation.';
+            } else if (testSuite === 'dieharder') {
+                return DIEHARDER_TEST_DESCRIPTIONS[testName] || 'Statistical test for randomness evaluation.';
+            }
+            return 'Statistical test for randomness evaluation.';
+        }
+        
         function displaySTSResults(scorecard) {
             const results = document.getElementById('sts-results');
             
@@ -1752,7 +1852,8 @@
             html += '<h4>QSE Entropy</h4>';
             html += `<div class="result-item"><strong>Overall:</strong> <span class="stat-badge ${qsePass ? 'success' : 'danger'}">${qsePass ? 'PASS' : 'FAIL'}</span></div>`;
             html += `<div class="result-item"><strong>Passed Tests:</strong> ${scorecard.qse_summary.passed_tests}/${scorecard.qse_summary.total_tests}</div>`;
-            html += `<div class="result-item"><strong>Weakest Test:</strong> ${scorecard.qse_weakest_test.test_name}</div>`;
+            const qseWeakestDescCard = getTestDescription(scorecard.qse_weakest_test.test_name, 'sts');
+            html += `<div class="result-item"><strong>Weakest Test:</strong> <span title="${qseWeakestDescCard.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${scorecard.qse_weakest_test.test_name}</span></div>`;
             html += `<div class="result-item"><strong>Pass Rate:</strong> ${scorecard.qse_weakest_test.pass_rate.toFixed(2)}%</div>`;
             html += '</div>';
             
@@ -1761,7 +1862,8 @@
             html += '<h4>System Entropy</h4>';
             html += `<div class="result-item"><strong>Overall:</strong> <span class="stat-badge ${sysPass ? 'success' : 'danger'}">${sysPass ? 'PASS' : 'FAIL'}</span></div>`;
             html += `<div class="result-item"><strong>Passed Tests:</strong> ${scorecard.system_summary.passed_tests}/${scorecard.system_summary.total_tests}</div>`;
-            html += `<div class="result-item"><strong>Weakest Test:</strong> ${scorecard.system_weakest_test.test_name}</div>`;
+            const sysWeakestDescCard = getTestDescription(scorecard.system_weakest_test.test_name, 'sts');
+            html += `<div class="result-item"><strong>Weakest Test:</strong> <span title="${sysWeakestDescCard.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${scorecard.system_weakest_test.test_name}</span></div>`;
             html += `<div class="result-item"><strong>Pass Rate:</strong> ${scorecard.system_weakest_test.pass_rate.toFixed(2)}%</div>`;
             html += '</div>';
             
@@ -1795,8 +1897,9 @@
                 const wLabel = w === 'qse' ? 'QSE' : (w === 'system' ? 'System' : 'Tie');
                 const wColor = w === 'qse' ? '#27ae60' : (w === 'system' ? '#3498db' : '#666');
                 
+                const testDesc = getTestDescription(comp.test_name, 'sts');
                 html += '<tr>';
-                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>${comp.test_name}</strong></td>`;
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong title="${testDesc.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${comp.test_name}</strong></td>`;
                 html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${comp.qse.passed}/${comp.qse.total} (${comp.qse.pass_rate.toFixed(2)}%)</td>`;
                 html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${comp.qse.p_value_uniformity.toFixed(6)}</td>`;
                 html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${comp.system.passed}/${comp.system.total} (${comp.system.pass_rate.toFixed(2)}%)</td>`;
@@ -1820,17 +1923,19 @@
             html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Threshold Margin</th>';
             html += '</tr></thead><tbody>';
             
+            const qseWeakestDescTable = getTestDescription(scorecard.qse_weakest_test.test_name, 'sts');
             html += '<tr>';
             html += '<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>QSE</strong></td>';
-            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.test_name}</td>`;
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><span title="${qseWeakestDescTable.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${scorecard.qse_weakest_test.test_name}</span></td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.passed}/${scorecard.qse_weakest_test.total} (${scorecard.qse_weakest_test.pass_rate.toFixed(2)}%)</td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.p_value_uniformity.toFixed(6)}</td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.passed - scorecard.qse_weakest_test.min_required}</td>`;
             html += '</tr>';
             
+            const sysWeakestDescTable = getTestDescription(scorecard.system_weakest_test.test_name, 'sts');
             html += '<tr>';
             html += '<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>System</strong></td>';
-            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.test_name}</td>`;
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><span title="${sysWeakestDescTable.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${scorecard.system_weakest_test.test_name}</span></td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.passed}/${scorecard.system_weakest_test.total} (${scorecard.system_weakest_test.pass_rate.toFixed(2)}%)</td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.p_value_uniformity.toFixed(6)}</td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.passed - scorecard.system_weakest_test.min_required}</td>`;
@@ -1870,6 +1975,10 @@
             progress.style.display = 'block';
             results.style.display = 'none';
             reportLink.style.display = 'none';
+            
+            // Show STOP button, hide RUN button
+            document.getElementById('sts-run-btn').style.display = 'none';
+            document.getElementById('sts-stop-btn').style.display = 'inline-block';
             
             // Helper to update progress
             function updateProgress(percent, text) {
@@ -2028,6 +2137,38 @@
                 results.style.display = 'block';
             } finally {
                 loading.classList.remove('active');
+                // Hide STOP button, show RUN button
+                document.getElementById('sts-run-btn').style.display = 'inline-block';
+                document.getElementById('sts-stop-btn').style.display = 'none';
+            }
+        }
+        
+        async function stopSTSTests() {
+            if (!confirm('Are you sure you want to stop the STS pipeline? This will terminate the running process.')) {
+                return;
+            }
+            
+            const statusLog = document.getElementById('sts-status');
+            addStatusLog('sts-status', '⏹️ Stopping STS pipeline...', 'warning');
+            
+            try {
+                const response = await fetch('/api/sts/stop', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    addStatusLog('sts-status', '✅ STS pipeline stopped successfully', 'success');
+                    document.getElementById('sts-run-btn').style.display = 'inline-block';
+                    document.getElementById('sts-stop-btn').style.display = 'none';
+                    document.getElementById('sts-loading').classList.remove('active');
+                } else {
+                    addStatusLog('sts-status', `❌ Failed to stop: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                addStatusLog('sts-status', `❌ Error stopping pipeline: ${error.message}`, 'error');
             }
         }
 
@@ -2081,6 +2222,9 @@
                 // Show report link if results are loaded
                 if (reportLink) reportLink.style.display = 'block';
                 
+                // Load past reports
+                loadDieharderPastReports();
+                
             } catch (error) {
                 statusLog.innerHTML = `<div class="status-log-entry error">Error: ${error.message}</div>`;
                 statusLog.style.display = 'block';
@@ -2109,19 +2253,15 @@
             // QSE card
             html += '<div class="comparison-card ' + (qsePass ? 'qrng' : 'weak') + '">';
             html += '<h4>QSE Entropy</h4>';
-            html += `<div class="result-item"><strong>Overall:</strong> <span class="stat-badge ${qsePass ? 'success' : 'danger'}">${qsePass ? 'PASS' : 'FAIL'}</span></div>`;
-            html += `<div class="result-item"><strong>Passed Tests:</strong> ${scorecard.qse_summary.passed_tests}/${scorecard.qse_summary.total_tests}</div>`;
-            html += `<div class="result-item"><strong>Weak Tests:</strong> ${scorecard.qse_summary.weak_tests}</div>`;
-            html += `<div class="result-item"><strong>Failed Tests:</strong> ${scorecard.qse_summary.failed_tests}</div>`;
+            html += `<div class="result-item" style="font-size: 1.1em; margin-bottom: 8px;"><strong>Passed Tests:</strong> ${scorecard.qse_summary.passed_tests}/${scorecard.qse_summary.total_tests}</div>`;
+            html += `<div class="result-item" style="color: #666;">Weak: ${scorecard.qse_summary.weak_tests} • Failed: ${scorecard.qse_summary.failed_tests}</div>`;
             html += '</div>';
             
             // System card
             html += '<div class="comparison-card ' + (sysPass ? 'info' : 'weak') + '">';
             html += '<h4>System Entropy</h4>';
-            html += `<div class="result-item"><strong>Overall:</strong> <span class="stat-badge ${sysPass ? 'success' : 'danger'}">${sysPass ? 'PASS' : 'FAIL'}</span></div>`;
-            html += `<div class="result-item"><strong>Passed Tests:</strong> ${scorecard.system_summary.passed_tests}/${scorecard.system_summary.total_tests}</div>`;
-            html += `<div class="result-item"><strong>Weak Tests:</strong> ${scorecard.system_summary.weak_tests}</div>`;
-            html += `<div class="result-item"><strong>Failed Tests:</strong> ${scorecard.system_summary.failed_tests}</div>`;
+            html += `<div class="result-item" style="font-size: 1.1em; margin-bottom: 8px;"><strong>Passed Tests:</strong> ${scorecard.system_summary.passed_tests}/${scorecard.system_summary.total_tests}</div>`;
+            html += `<div class="result-item" style="color: #666;">Weak: ${scorecard.system_summary.weak_tests} • Failed: ${scorecard.system_summary.failed_tests}</div>`;
             html += '</div>';
             
             // Winner card
@@ -2161,8 +2301,9 @@
                                 comp.system.assessment === 'WEAK' ? '<span class="stat-badge warning">WEAK</span>' : 
                                 '<span class="stat-badge danger">FAILED</span>';
                 
+                const testDesc = getTestDescription(comp.test_name, 'dieharder');
                 html += '<tr>';
-                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>${comp.test_name}</strong></td>`;
+                html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong title="${testDesc.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${comp.test_name}</strong></td>`;
                 html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${comp.qse.p_value.toFixed(6)}</td>`;
                 html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${qseBadge}</td>`;
                 html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${comp.system.p_value.toFixed(6)}</td>`;
@@ -2185,9 +2326,10 @@
             html += '<th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Assessment</th>';
             html += '</tr></thead><tbody>';
             
+            const qseWeakestDesc = getTestDescription(scorecard.qse_weakest_test.test_name, 'dieharder');
             html += '<tr>';
             html += '<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>QSE</strong></td>';
-            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.test_name}</td>`;
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><span title="${qseWeakestDesc.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${scorecard.qse_weakest_test.test_name}</span></td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.qse_weakest_test.p_value.toFixed(6)}</td>`;
             const qseWeakBadge = scorecard.qse_weakest_test.assessment === 'PASSED' ? '<span class="stat-badge success">PASSED</span>' : 
                                 scorecard.qse_weakest_test.assessment === 'WEAK' ? '<span class="stat-badge warning">WEAK</span>' : 
@@ -2195,9 +2337,10 @@
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${qseWeakBadge}</td>`;
             html += '</tr>';
             
+            const sysWeakestDesc = getTestDescription(scorecard.system_weakest_test.test_name, 'dieharder');
             html += '<tr>';
             html += '<td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>System</strong></td>';
-            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.test_name}</td>`;
+            html += `<td style="padding: 10px; border: 1px solid #e2e8f0;"><span title="${sysWeakestDesc.replace(/"/g, '&quot;')}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">${scorecard.system_weakest_test.test_name}</span></td>`;
             html += `<td style="padding: 10px; border: 1px solid #e2e8f0;">${scorecard.system_weakest_test.p_value.toFixed(6)}</td>`;
             const sysWeakBadge = scorecard.system_weakest_test.assessment === 'PASSED' ? '<span class="stat-badge success">PASSED</span>' : 
                                 scorecard.system_weakest_test.assessment === 'WEAK' ? '<span class="stat-badge warning">WEAK</span>' : 
@@ -2239,6 +2382,10 @@
             progress.style.display = 'block';
             results.style.display = 'none';
             reportLink.style.display = 'none';
+            
+            // Show STOP button, hide RUN button
+            document.getElementById('dieharder-run-btn').style.display = 'none';
+            document.getElementById('dieharder-stop-btn').style.display = 'inline-block';
             
             // Helper to update progress
             function updateProgress(percent, text) {
@@ -2382,6 +2529,150 @@
                 results.style.display = 'block';
             } finally {
                 loading.classList.remove('active');
+                // Hide STOP button, show RUN button
+                document.getElementById('dieharder-run-btn').style.display = 'inline-block';
+                document.getElementById('dieharder-stop-btn').style.display = 'none';
+            }
+        }
+        
+        async function stopDieharderTests() {
+            if (!confirm('Are you sure you want to stop the Dieharder pipeline? This will terminate the running process.')) {
+                return;
+            }
+            
+            const statusLog = document.getElementById('dieharder-status');
+            addStatusLog('dieharder-status', '⏹️ Stopping Dieharder pipeline...', 'warning');
+            
+            try {
+                const response = await fetch('/api/dieharder/stop', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    addStatusLog('dieharder-status', '✅ Dieharder pipeline stopped successfully', 'success');
+                    document.getElementById('dieharder-run-btn').style.display = 'inline-block';
+                    document.getElementById('dieharder-stop-btn').style.display = 'none';
+                    document.getElementById('dieharder-loading').classList.remove('active');
+                } else {
+                    addStatusLog('dieharder-status', `❌ Failed to stop: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                addStatusLog('dieharder-status', `❌ Error stopping pipeline: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadSTSPastReports() {
+            const container = document.getElementById('sts-past-reports-list');
+            const pastReportsSection = document.getElementById('sts-past-reports');
+            
+            if (!container || !pastReportsSection) return;
+            
+            try {
+                const response = await fetch('/api/sts/past-reports');
+                if (!response.ok) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No past reports found.</div>';
+                    pastReportsSection.style.display = 'none';
+                    return;
+                }
+                
+                const data = await response.json();
+                const reports = data.reports || [];
+                
+                if (reports.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No past reports found.</div>';
+                    pastReportsSection.style.display = 'block';
+                    return;
+                }
+                
+                // Format sequence length with commas
+                const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                
+                let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+                html += '<thead><tr style="background: #f1f5f9; border-bottom: 2px solid #e2e8f0;">';
+                html += '<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Date & Time</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Sequences</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Sequence Length</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Size</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Action</th>';
+                html += '</tr></thead><tbody>';
+                
+                reports.forEach(report => {
+                    html += '<tr style="border-bottom: 1px solid #e2e8f0;">';
+                    html += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${report.date}</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">${formatNumber(report.sequences)}</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">${formatNumber(report.seq_length)} bits</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">${report.size_human}</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">`;
+                    html += `<a href="${report.path}" target="_blank" class="btn btn-primary" style="padding: 6px 16px; font-size: 0.9em; text-decoration: none;">📄 Open</a>`;
+                    html += `</td>`;
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                pastReportsSection.style.display = 'block';
+            } catch (error) {
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #d32f2f;">Error loading past reports: ${error.message}</div>`;
+                pastReportsSection.style.display = 'block';
+            }
+        }
+        
+        async function loadDieharderPastReports() {
+            const container = document.getElementById('dieharder-past-reports-list');
+            const pastReportsSection = document.getElementById('dieharder-past-reports');
+            
+            if (!container || !pastReportsSection) return;
+            
+            try {
+                const response = await fetch('/api/dieharder/past-reports');
+                if (!response.ok) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No past reports found.</div>';
+                    pastReportsSection.style.display = 'none';
+                    return;
+                }
+                
+                const data = await response.json();
+                const reports = data.reports || [];
+                
+                if (reports.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No past reports found.</div>';
+                    pastReportsSection.style.display = 'block';
+                    return;
+                }
+                
+                // Format sequence length with commas
+                const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                
+                let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+                html += '<thead><tr style="background: #f1f5f9; border-bottom: 2px solid #e2e8f0;">';
+                html += '<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Date & Time</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Sequences</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Sequence Length</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Size</th>';
+                html += '<th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Action</th>';
+                html += '</tr></thead><tbody>';
+                
+                reports.forEach(report => {
+                    html += '<tr style="border-bottom: 1px solid #e2e8f0;">';
+                    html += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${report.date}</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">${formatNumber(report.sequences)}</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">${formatNumber(report.seq_length)} bits</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">${report.size_human}</td>`;
+                    html += `<td style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">`;
+                    html += `<a href="${report.path}" target="_blank" class="btn btn-primary" style="padding: 6px 16px; font-size: 0.9em; text-decoration: none;">📄 Open</a>`;
+                    html += `</td>`;
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                pastReportsSection.style.display = 'block';
+            } catch (error) {
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #d32f2f;">Error loading past reports: ${error.message}</div>`;
+                pastReportsSection.style.display = 'block';
             }
         }
 

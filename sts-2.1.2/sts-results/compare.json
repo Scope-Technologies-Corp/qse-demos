@@ -1,10 +1,10 @@
 {
   "overall": {
-    "qse_overall_pass": true,
-    "system_overall_pass": true,
-    "winner": "qse",
+    "qse_overall_pass": false,
+    "system_overall_pass": false,
+    "winner": "system",
     "win_counts": {
-      "qse": 8,
+      "qse": 6,
       "system": 7,
       "tie": 0
     }
@@ -13,75 +13,75 @@
     {
       "test_name": "ApproximateEntropy",
       "qse": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.455937,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.350485,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.066882,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
-        "meets_threshold": true
+        "pass_rate": 80.0,
+        "p_value_uniformity": 0.534146,
+        "passed": 8,
+        "total": 10,
+        "margin": -1,
+        "meets_threshold": false
       },
-      "winner": "system",
+      "winner": "qse",
       "delta": {
-        "pass_rate": -2.0,
-        "p_value_uniformity": 0.389055,
-        "margin": -2
+        "pass_rate": 20.0,
+        "p_value_uniformity": -0.183661,
+        "margin": 2
       }
     },
     {
       "test_name": "BlockFrequency",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.171867,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.213309,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.616305,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.739918,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
-      "winner": "qse",
+      "winner": "system",
       "delta": {
-        "pass_rate": 1.0,
-        "p_value_uniformity": -0.444438,
-        "margin": 1
+        "pass_rate": 0.0,
+        "p_value_uniformity": -0.526609,
+        "margin": 0
       }
     },
     {
       "test_name": "CumulativeSums",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.719747,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.911413,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.162606,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
+        "pass_rate": 90.0,
+        "p_value_uniformity": 0.739918,
+        "passed": 9,
+        "total": 10,
+        "margin": 0,
         "meets_threshold": true
       },
       "winner": "qse",
       "delta": {
-        "pass_rate": 1.0,
-        "p_value_uniformity": 0.557141,
+        "pass_rate": 10.0,
+        "p_value_uniformity": 0.171495,
         "margin": 1
       }
     },
@@ -89,199 +89,149 @@
       "test_name": "FFT",
       "qse": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.401199,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
+        "p_value_uniformity": 0.991468,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.759756,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.008879,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "winner": "qse",
       "delta": {
-        "pass_rate": 1.0,
-        "p_value_uniformity": -0.358557,
-        "margin": 1
+        "pass_rate": 0.0,
+        "p_value_uniformity": 0.982589,
+        "margin": 0
       }
     },
     {
       "test_name": "Frequency",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.657933,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.534146,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.514124,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
+        "pass_rate": 90.0,
+        "p_value_uniformity": 0.213309,
+        "passed": 9,
+        "total": 10,
+        "margin": 0,
         "meets_threshold": true
       },
       "winner": "qse",
       "delta": {
-        "pass_rate": 1.0,
-        "p_value_uniformity": 0.143809,
+        "pass_rate": 10.0,
+        "p_value_uniformity": 0.320837,
         "margin": 1
       }
     },
     {
       "test_name": "LinearComplexity",
       "qse": {
-        "pass_rate": 97.0,
-        "p_value_uniformity": 0.851383,
-        "passed": 97,
-        "total": 100,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.739918,
+        "passed": 10,
+        "total": 10,
         "margin": 1,
         "meets_threshold": true
       },
       "system": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.017912,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
+        "p_value_uniformity": 0.911413,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "winner": "system",
       "delta": {
-        "pass_rate": -3.0,
-        "p_value_uniformity": 0.833471,
-        "margin": -3
+        "pass_rate": 0.0,
+        "p_value_uniformity": -0.171495,
+        "margin": 0
       }
     },
     {
       "test_name": "LongestRun",
       "qse": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.834308,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.066882,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.213309,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.122325,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
-      "winner": "qse",
+      "winner": "system",
       "delta": {
         "pass_rate": 0.0,
-        "p_value_uniformity": 0.620999,
+        "p_value_uniformity": -0.055443,
         "margin": 0
       }
     },
     {
       "test_name": "NonOverlappingTemplate",
       "qse": {
-        "pass_rate": 97.0,
-        "p_value_uniformity": 0.897763,
-        "passed": 97,
-        "total": 100,
-        "margin": 1,
-        "meets_threshold": true
+        "pass_rate": 80.0,
+        "p_value_uniformity": 0.534146,
+        "passed": 8,
+        "total": 10,
+        "margin": -1,
+        "meets_threshold": false
       },
       "system": {
-        "pass_rate": 97.0,
-        "p_value_uniformity": 0.080519,
-        "passed": 97,
-        "total": 100,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.066882,
+        "passed": 10,
+        "total": 10,
         "margin": 1,
         "meets_threshold": true
       },
-      "winner": "qse",
+      "winner": "system",
       "delta": {
-        "pass_rate": 0.0,
-        "p_value_uniformity": 0.817244,
-        "margin": 0
+        "pass_rate": -20.0,
+        "p_value_uniformity": 0.467264,
+        "margin": -2
       }
     },
     {
       "test_name": "OverlappingTemplate",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.616305,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.779188,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
-        "meets_threshold": true
-      },
-      "winner": "qse",
-      "delta": {
-        "pass_rate": 1.0,
-        "p_value_uniformity": -0.162883,
-        "margin": 1
-      }
-    },
-    {
-      "test_name": "RandomExcursions",
-      "qse": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.181557,
-        "passed": 53,
-        "total": 53,
-        "margin": 3,
+        "p_value_uniformity": 0.350485,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.595549,
-        "passed": 59,
-        "total": 59,
-        "margin": 3,
+        "p_value_uniformity": 0.739918,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "winner": "system",
       "delta": {
         "pass_rate": 0.0,
-        "p_value_uniformity": -0.413992,
-        "margin": 0
-      }
-    },
-    {
-      "test_name": "RandomExcursionsVariant",
-      "qse": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.437274,
-        "passed": 53,
-        "total": 53,
-        "margin": 3,
-        "meets_threshold": true
-      },
-      "system": {
-        "pass_rate": 100.0,
-        "p_value_uniformity": 0.514124,
-        "passed": 59,
-        "total": 59,
-        "margin": 3,
-        "meets_threshold": true
-      },
-      "winner": "system",
-      "delta": {
-        "pass_rate": 0.0,
-        "p_value_uniformity": -0.07685,
+        "p_value_uniformity": -0.389433,
         "margin": 0
       }
     },
@@ -289,100 +239,100 @@
       "test_name": "Rank",
       "qse": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.883171,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
+        "p_value_uniformity": 0.534146,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 98.0,
-        "p_value_uniformity": 0.437274,
-        "passed": 98,
-        "total": 100,
-        "margin": 2,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.066882,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "winner": "qse",
       "delta": {
-        "pass_rate": 2.0,
-        "p_value_uniformity": 0.445897,
-        "margin": 2
+        "pass_rate": 0.0,
+        "p_value_uniformity": 0.467264,
+        "margin": 0
       }
     },
     {
       "test_name": "Runs",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.289667,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.534146,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.719747,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.122325,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
-      "winner": "system",
+      "winner": "qse",
       "delta": {
         "pass_rate": 0.0,
-        "p_value_uniformity": -0.43008,
+        "p_value_uniformity": 0.411821,
         "margin": 0
       }
     },
     {
       "test_name": "Serial",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.383827,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.008879,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.171867,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
+        "p_value_uniformity": 0.911413,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "winner": "system",
       "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": 0.21196,
-        "margin": -1
+        "pass_rate": 0.0,
+        "p_value_uniformity": -0.902534,
+        "margin": 0
       }
     },
     {
       "test_name": "Universal",
       "qse": {
-        "pass_rate": 99.0,
-        "p_value_uniformity": 0.514124,
-        "passed": 99,
-        "total": 100,
-        "margin": 3,
+        "pass_rate": 100.0,
+        "p_value_uniformity": 0.350485,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "system": {
         "pass_rate": 100.0,
-        "p_value_uniformity": 0.275709,
-        "passed": 100,
-        "total": 100,
-        "margin": 4,
+        "p_value_uniformity": 0.739918,
+        "passed": 10,
+        "total": 10,
+        "margin": 1,
         "meets_threshold": true
       },
       "winner": "system",
       "delta": {
-        "pass_rate": -1.0,
-        "p_value_uniformity": 0.238415,
-        "margin": -1
+        "pass_rate": 0.0,
+        "p_value_uniformity": -0.389433,
+        "margin": 0
       }
     }
   ]

@@ -32,6 +32,10 @@ CORS(app)
 # Import demo functions from existing files
 sys.path.insert(0, os.path.dirname(__file__))
 
+# Store running processes for cancellation
+# Format: {'sts': subprocess.Popen, 'dieharder': subprocess.Popen}
+_running_processes = {}
+
 DEMO_VERSION = "DEMOv1"
 DEFAULT_AAD = b"entropy-demo-aad-v1"
 
@@ -796,15 +800,22 @@ def sts_run_tests():
         app.logger.info(f"Command: {' '.join(cmd)}")
         
         # Run the script and capture output with line buffering
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=str(sts_dir),
-            env=env,
-            text=True,
-            bufsize=1,  # Line buffered
-        )
+        # Use start_new_session on Unix to create a new process group for proper termination
+        process_kwargs = {
+            'stdout': subprocess.PIPE,
+            'stderr': subprocess.STDOUT,
+            'cwd': str(sts_dir),
+            'env': env,
+            'text': True,
+            'bufsize': 1,  # Line buffered
+        }
+        if os.name != 'nt':  # Unix/Linux/macOS
+            process_kwargs['start_new_session'] = True
+        
+        process = subprocess.Popen(cmd, **process_kwargs)
+        
+        # Store process for potential cancellation
+        _running_processes['sts'] = process
         
         # Read output line by line - capture ALL lines
         line_count = 0
@@ -824,6 +835,9 @@ def sts_run_tests():
         
         # Ensure process is fully terminated
         return_code = process.wait()
+        
+        # Remove from running processes
+        _running_processes.pop('sts', None)
         app.logger.info(f"[STS] Process completed. Total lines captured: {len(output_lines)}, Exit code: {return_code}")
         
         app.logger.info(f"Pipeline finished with exit code: {process.returncode}")
@@ -870,6 +884,110 @@ def sts_status():
     })
 
 
+@app.route('/api/sts/stop', methods=['POST'])
+def sts_stop():
+    """Stop/cancel the currently running STS pipeline"""
+    if 'sts' not in _running_processes:
+        return jsonify({'error': 'No STS process is currently running'}), 404
+    
+    process = _running_processes.get('sts')
+    if not process:
+        return jsonify({'error': 'No STS process is currently running'}), 404
+    
+    if process.poll() is not None:
+        # Process already finished
+        _running_processes.pop('sts', None)
+        return jsonify({'error': 'Process has already finished'}), 404
+    
+    try:
+        # Terminate the process and its children
+        import signal
+        if os.name == 'nt':  # Windows
+            process.terminate()
+        else:  # Unix/Linux/macOS
+            try:
+                # Send SIGTERM to the process group to kill child processes too
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            except ProcessLookupError:
+                # Process group doesn't exist (process already dead)
+                _running_processes.pop('sts', None)
+                return jsonify({'error': 'Process is no longer running'}), 404
+        
+        # Wait a bit for graceful termination
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            # Force kill if it doesn't terminate
+            if os.name == 'nt':
+                process.kill()
+            else:
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass  # Process already dead
+            process.wait()
+        
+        _running_processes.pop('sts', None)
+        app.logger.info("[STS] Process stopped by user request")
+        return jsonify({'success': True, 'message': 'STS pipeline stopped successfully'})
+    except Exception as e:
+        app.logger.error(f"[STS] Error stopping process: {e}")
+        _running_processes.pop('sts', None)  # Clean up even on error
+        return jsonify({'error': f'Failed to stop process: {str(e)}'}), 500
+
+
+@app.route('/api/dieharder/stop', methods=['POST'])
+def dieharder_stop():
+    """Stop/cancel the currently running Dieharder pipeline"""
+    if 'dieharder' not in _running_processes:
+        return jsonify({'error': 'No Dieharder process is currently running'}), 404
+    
+    process = _running_processes.get('dieharder')
+    if not process:
+        return jsonify({'error': 'No Dieharder process is currently running'}), 404
+    
+    if process.poll() is not None:
+        # Process already finished
+        _running_processes.pop('dieharder', None)
+        return jsonify({'error': 'Process has already finished'}), 404
+    
+    try:
+        # Terminate the process and its children
+        import signal
+        if os.name == 'nt':  # Windows
+            process.terminate()
+        else:  # Unix/Linux/macOS
+            try:
+                # Send SIGTERM to the process group to kill child processes too
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            except ProcessLookupError:
+                # Process group doesn't exist (process already dead)
+                _running_processes.pop('dieharder', None)
+                return jsonify({'error': 'Process is no longer running'}), 404
+        
+        # Wait a bit for graceful termination
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            # Force kill if it doesn't terminate
+            if os.name == 'nt':
+                process.kill()
+            else:
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass  # Process already dead
+            process.wait()
+        
+        _running_processes.pop('dieharder', None)
+        app.logger.info("[Dieharder] Process stopped by user request")
+        return jsonify({'success': True, 'message': 'Dieharder pipeline stopped successfully'})
+    except Exception as e:
+        app.logger.error(f"[Dieharder] Error stopping process: {e}")
+        _running_processes.pop('dieharder', None)  # Clean up even on error
+        return jsonify({'error': f'Failed to stop process: {str(e)}'}), 500
+
+
 @app.route('/api/sts/report-html', methods=['GET'])
 def sts_report_html():
     """Serve the generated HTML scorecard report"""
@@ -878,6 +996,86 @@ def sts_report_html():
     
     if not report_path.exists():
         return "<html><body><h1>Report Not Found</h1><p>No scorecard.html has been generated yet. Please run the STS pipeline first.</p></body></html>", 404
+    
+    # Read and serve the HTML file
+    with open(report_path, 'r') as f:
+        content = f.read()
+    
+    return content, 200, {'Content-Type': 'text/html'}
+
+
+@app.route('/api/sts/past-reports', methods=['GET'])
+def sts_past_reports():
+    """List all past STS reports"""
+    sts_dir = Path(__file__).parent / "sts-2.1.2"
+    past_reports_dir = sts_dir / "sts-results" / "past-reports"
+    
+    reports = []
+    if past_reports_dir.exists():
+        for report_file in sorted(past_reports_dir.glob("scorecard_*.html"), reverse=True):
+            # Parse filename: scorecard_${SEQUENCES}_seqs_${SEQ_LENGTH}_bits_${DATE}.html
+            filename = report_file.name
+            try:
+                # Extract date from filename (last part before .html)
+                date_part = filename.replace("scorecard_", "").replace(".html", "")
+                # Format: ${SEQUENCES}_seqs_${SEQ_LENGTH}_bits_${DATE}
+                parts = date_part.split("_bits_")
+                if len(parts) == 2:
+                    seq_info = parts[0]  # e.g., "100_seqs_1000000"
+                    date_str = parts[1]  # e.g., "20260126_150854"
+                    
+                    # Parse sequence info
+                    seq_parts = seq_info.split("_seqs_")
+                    if len(seq_parts) == 2:
+                        sequences = seq_parts[0]
+                        seq_length = seq_parts[1]
+                        
+                        # Parse date
+                        date_part_only = date_str[:8]  # YYYYMMDD
+                        time_part = date_str[9:] if len(date_str) > 9 else ""  # HHMMSS
+                        
+                        # Format date for display
+                        try:
+                            from datetime import datetime
+                            if time_part:
+                                dt = datetime.strptime(f"{date_part_only}_{time_part}", "%Y%m%d_%H%M%S")
+                            else:
+                                dt = datetime.strptime(date_part_only, "%Y%m%d")
+                            formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
+                        except:
+                            formatted_date = f"{date_part_only} {time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}" if time_part else date_part_only
+                        
+                        stat = report_file.stat()
+                        reports.append({
+                            'filename': filename,
+                            'path': f"/api/sts/past-reports/{filename}",
+                            'sequences': int(sequences),
+                            'seq_length': int(seq_length),
+                            'date': formatted_date,
+                            'timestamp': date_str,
+                            'size': stat.st_size,
+                            'size_human': f"{stat.st_size / 1024:.1f} KB"
+                        })
+            except Exception as e:
+                # Skip files that don't match the pattern
+                app.logger.warning(f"Could not parse report filename {filename}: {e}")
+                continue
+    
+    return jsonify({'reports': reports})
+
+
+@app.route('/api/sts/past-reports/<filename>', methods=['GET'])
+def sts_past_report_html(filename):
+    """Serve a specific past STS report"""
+    sts_dir = Path(__file__).parent / "sts-2.1.2"
+    report_path = sts_dir / "sts-results" / "past-reports" / filename
+    
+    # Security: ensure filename doesn't contain path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        return "<html><body><h1>Invalid Filename</h1></body></html>", 400
+    
+    if not report_path.exists():
+        return "<html><body><h1>Report Not Found</h1><p>The requested report does not exist.</p></body></html>", 404
     
     # Read and serve the HTML file
     with open(report_path, 'r') as f:
@@ -1014,15 +1212,22 @@ def dieharder_run_tests():
         app.logger.info(f"Command: {' '.join(cmd)}")
         
         # Run the script and capture output with line buffering
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=str(dieharder_dir),
-            env=env,
-            text=True,
-            bufsize=1,  # Line buffered
-        )
+        # Use start_new_session on Unix to create a new process group for proper termination
+        process_kwargs = {
+            'stdout': subprocess.PIPE,
+            'stderr': subprocess.STDOUT,
+            'cwd': str(dieharder_dir),
+            'env': env,
+            'text': True,
+            'bufsize': 1,  # Line buffered
+        }
+        if os.name != 'nt':  # Unix/Linux/macOS
+            process_kwargs['start_new_session'] = True
+        
+        process = subprocess.Popen(cmd, **process_kwargs)
+        
+        # Store process for potential cancellation
+        _running_processes['dieharder'] = process
         
         # Read output line by line - capture ALL lines
         line_count = 0
@@ -1042,6 +1247,9 @@ def dieharder_run_tests():
         
         # Ensure process is fully terminated
         return_code = process.wait()
+        
+        # Remove from running processes
+        _running_processes.pop('dieharder', None)
         app.logger.info(f"[Dieharder] Process completed. Total lines captured: {len(output_lines)}, Exit code: {return_code}")
         
         app.logger.info(f"Pipeline finished with exit code: {process.returncode}")
@@ -1083,6 +1291,86 @@ def dieharder_report_html():
     
     if not report_path.exists():
         return "<html><body><h1>Report Not Found</h1><p>No scorecard.html has been generated yet. Please run the Dieharder pipeline first.</p></body></html>", 404
+    
+    # Read and serve the HTML file
+    with open(report_path, 'r') as f:
+        content = f.read()
+    
+    return content, 200, {'Content-Type': 'text/html'}
+
+
+@app.route('/api/dieharder/past-reports', methods=['GET'])
+def dieharder_past_reports():
+    """List all past Dieharder reports"""
+    dieharder_dir = Path(__file__).parent / "dieharder"
+    past_reports_dir = dieharder_dir / "dieharder-results" / "past-reports"
+    
+    reports = []
+    if past_reports_dir.exists():
+        for report_file in sorted(past_reports_dir.glob("scorecard_*.html"), reverse=True):
+            # Parse filename: scorecard_${SEQUENCES}_seqs_${SEQ_LENGTH}_bits_${DATE}.html
+            filename = report_file.name
+            try:
+                # Extract date from filename (last part before .html)
+                date_part = filename.replace("scorecard_", "").replace(".html", "")
+                # Format: ${SEQUENCES}_seqs_${SEQ_LENGTH}_bits_${DATE}
+                parts = date_part.split("_bits_")
+                if len(parts) == 2:
+                    seq_info = parts[0]  # e.g., "100_seqs_1000000"
+                    date_str = parts[1]  # e.g., "20260126_150854"
+                    
+                    # Parse sequence info
+                    seq_parts = seq_info.split("_seqs_")
+                    if len(seq_parts) == 2:
+                        sequences = seq_parts[0]
+                        seq_length = seq_parts[1]
+                        
+                        # Parse date
+                        date_part_only = date_str[:8]  # YYYYMMDD
+                        time_part = date_str[9:] if len(date_str) > 9 else ""  # HHMMSS
+                        
+                        # Format date for display
+                        try:
+                            from datetime import datetime
+                            if time_part:
+                                dt = datetime.strptime(f"{date_part_only}_{time_part}", "%Y%m%d_%H%M%S")
+                            else:
+                                dt = datetime.strptime(date_part_only, "%Y%m%d")
+                            formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
+                        except:
+                            formatted_date = f"{date_part_only} {time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}" if time_part else date_part_only
+                        
+                        stat = report_file.stat()
+                        reports.append({
+                            'filename': filename,
+                            'path': f"/api/dieharder/past-reports/{filename}",
+                            'sequences': int(sequences),
+                            'seq_length': int(seq_length),
+                            'date': formatted_date,
+                            'timestamp': date_str,
+                            'size': stat.st_size,
+                            'size_human': f"{stat.st_size / 1024:.1f} KB"
+                        })
+            except Exception as e:
+                # Skip files that don't match the pattern
+                app.logger.warning(f"Could not parse report filename {filename}: {e}")
+                continue
+    
+    return jsonify({'reports': reports})
+
+
+@app.route('/api/dieharder/past-reports/<filename>', methods=['GET'])
+def dieharder_past_report_html(filename):
+    """Serve a specific past Dieharder report"""
+    dieharder_dir = Path(__file__).parent / "dieharder"
+    report_path = dieharder_dir / "dieharder-results" / "past-reports" / filename
+    
+    # Security: ensure filename doesn't contain path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        return "<html><body><h1>Invalid Filename</h1></body></html>", 400
+    
+    if not report_path.exists():
+        return "<html><body><h1>Report Not Found</h1><p>The requested report does not exist.</p></body></html>", 404
     
     # Read and serve the HTML file
     with open(report_path, 'r') as f:

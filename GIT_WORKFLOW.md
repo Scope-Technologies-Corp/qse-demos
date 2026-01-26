@@ -283,3 +283,65 @@ git config --global pull.rebase true
 git config --global user.name "Your Name"
 git config --global user.email "your.email@example.com"
 ```
+
+
+
+---
+## Releasing a Version (Proper Industry Practice)
+
+### 1. Freeze a Version with Git Tag (Not Zip Files!)
+
+Do **NOT** use zip files for version freezes. Use git tags and releases instead:
+
+#### Create a Release Tag
+
+This "locks" a stable version, making it easily retrievable in the future.
+
+```bash
+git checkout main
+git pull origin main
+git tag -a v1.0.0 -m "Stable: Method B daemon POC"
+git push origin v1.0.0
+```
+
+- The release is now permanent and immutable in git history.
+- Retrieve this version any time with:
+
+```bash
+git checkout v1.0.0
+```
+
+> :white_check_mark: This is your immutable backup and the industry standard for code releases.
+
+---
+
+### 2. Semantic Versioning (SemVer)
+
+Use the industry-standard versioning scheme:
+
+```
+MAJOR.MINOR.PATCH
+```
+- PATCH (x.y.Z): Bug fixes, small changes, no breaking changes
+- MINOR (x.Y.z): New backward-compatible features
+- MAJOR (X.y.z): Breaking changes or major new features
+
+---
+
+### 3. "Production" Repository: One Repo, Multiple Environments
+
+- **Do NOT** create multiple "production repos".
+- **Correct professional setup:** Use a single codebase.
+
+**Separate environments via:**
+- Distinct config files, e.g.:
+    - `config-dev.yaml`
+    - `config-prod.yaml`
+- Distinct deployment methods, e.g.:
+    - Development: manual run
+    - Production: systemd, Docker, CI/CD
+
+This structure matches how real-world teams release, deploy, and maintain code.
+
+---
+
