@@ -2,179 +2,175 @@
 """
 Generate NIST-ready entropy sequences (.bin) using bulk entropy endpoint or local generator.
 
-Usage:
-    # QSE entropy (requires endpoint)
-    export ENTROPY_ENDPOINT="API_ENDPOINT"
-    python3 generate_entropy.py --use qse --seq-length 1000000 --sequences 100
-
-    # Or pass endpoint directly:
-    python3 generate_entropy.py --use qse --endpoint API_ENDPOINT --seq-length 1000000 --sequences 100
-
-    # Local system entropy
-    python3 generate_entropy.py --use local --seq-length 1000000 --sequences 100
-
-Output:
-    entropy-streams/qse/seq_0001_1000000bits.bin ... seq_0100_1000000bits.bin
-    entropy-streams/system/seq_0001_1000000bits.bin ... seq_0100_1000000bits.bin
-
-Note: The script automatically adds "/get" to the endpoint if not present.
-      e.g., "API_ENDPOINT" becomes
-            "API_ENDPOINT/get/125k"
+Improvements:
+- requests.Session keep-alive + pooling
+- retries + exponential backoff
+- separate connect/read timeouts
+- MUCH faster hex->bytes conversion (no giant bitstrings)
+- ALWAYS cleans old seq_*.bin files before generating (fresh runs only)
 """
 
 import argparse
-import json
+import glob
 import os
-import sys
-import urllib.error
-import urllib.request
 import secrets
+import sys
+import time
+from typing import Tuple
+
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 ENTROPY_ENDPOINT_ENV = "ENTROPY_ENDPOINT"
 
 
-def hex_to_bits(hex_str: str) -> str:
-    """Convert a hex string to a string of '0'/'1' bits."""
-    hex_str = hex_str.strip().lower()
-    if not hex_str:
-        return ""
-    try:
-        int(hex_str, 16)
-    except ValueError as exc:
-        raise ValueError("Response is not valid hex") from exc
-    return "".join(f"{int(ch, 16):04b}" for ch in hex_str)
-
-
-def bits_to_bytes(bit_str: str) -> bytes:
-    """Convert a '0'/'1' bitstring into raw bytes. Pads to full bytes."""
-    if not bit_str:
-        return b""
-    remainder = len(bit_str) % 8
-    if remainder != 0:
-        bit_str += "0" * (8 - remainder)
-    return int(bit_str, 2).to_bytes(len(bit_str) // 8, byteorder="big")
-
-
-def local_entropy_bits(bit_length: int) -> str:
-    """Generate entropy locally using secrets.token_bytes and return bits."""
-    byte_count = (bit_length + 7) // 8
-    data = secrets.token_bytes(byte_count)
-    bit_str = "".join(f"{byte:08b}" for byte in data)
-    return bit_str[:bit_length]
-
+# ----------------------------
+# Helpers
+# ----------------------------
 
 def bytes_to_size_path(byte_count: int) -> str:
-    """
-    Convert bytes to API path value:
-      - divisible by 1000 -> Xk
-      - else -> Xb
-    Examples:
-      125000 -> 125k
-      123456 -> 123456b
-    """
     if byte_count % 1000 == 0:
         return f"{byte_count // 1000}k"
     return f"{byte_count}b"
 
 
-def fetch_bulk_hex(base_url: str, size_path: str) -> str:
+def trim_to_bits(data: bytes, bit_length: int) -> bytes:
+    """Trim (or mask) bytes to exactly bit_length bits."""
+    if bit_length <= 0:
+        return b""
+    full_bytes = bit_length // 8
+    rem_bits = bit_length % 8
+
+    if rem_bits == 0:
+        return data[:full_bytes]
+
+    # Need one extra byte to keep remaining bits
+    out = bytearray(data[: full_bytes + 1])
+    mask = 0xFF & (0xFF << (8 - rem_bits))  # keep top rem_bits
+    out[-1] &= mask
+    return bytes(out)
+
+
+def local_entropy_bytes(bit_length: int) -> bytes:
+    byte_count = (bit_length + 7) // 8
+    data = secrets.token_bytes(byte_count)
+    return trim_to_bits(data, bit_length)
+
+
+def make_session(pool_size: int = 50) -> requests.Session:
+    s = requests.Session()
+    retry = Retry(
+        total=10,
+        connect=10,
+        read=10,
+        backoff_factor=0.5,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_status=False,
+        respect_retry_after_header=True,
+    )
+    adapter = HTTPAdapter(
+        max_retries=retry,
+        pool_connections=pool_size,
+        pool_maxsize=pool_size,
+    )
+    s.mount("http://", adapter)
+    s.mount("https://", adapter)
+    s.headers.update({"Connection": "keep-alive"})
+    return s
+
+
+def normalize_endpoint(base_url: str) -> str:
+    base_url = base_url.rstrip("/")
+    if not base_url.endswith("/get"):
+        base_url = base_url + "/get"
+    return base_url
+
+
+def fetch_bulk_bytes(
+    session: requests.Session,
+    base_url: str,
+    size_path: str,
+    timeout: Tuple[int, int],
+) -> bytes:
     """
     GET entropy from: base_url/get/size_path
     Expected response: {"success": true, "response": "<hex>"}
+    Returns raw bytes decoded from hex.
     """
-    base_url = base_url.rstrip("/")
+    base_url = normalize_endpoint(base_url)
     size_path = size_path.strip().lstrip("/")
-    
-    # Add /get if not present
-    if not base_url.endswith("/get"):
-        base_url = base_url + "/get"
-    
     url = f"{base_url}/{size_path}"
 
-    req = urllib.request.Request(url, method="GET")
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            raw = resp.read().decode("utf-8").strip()
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"HTTP error {exc.code}: {exc.reason}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Network error: {exc.reason}") from exc
+    r = session.get(url, timeout=timeout)
 
     try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("Response was not valid JSON") from exc
+        payload = r.json()
+    except Exception:
+        raise RuntimeError(f"Non-JSON response (HTTP {r.status_code}): {r.text[:200]}")
 
-    if not parsed.get("success", False):
-        raise RuntimeError(f"API returned success=false: {parsed}")
+    if r.status_code >= 400:
+        raise RuntimeError(f"HTTP {r.status_code}: {payload}")
 
-    hex_data = parsed.get("response")
-    if not isinstance(hex_data, str):
+    if not payload.get("success", False):
+        raise RuntimeError(f"API returned success=false: {payload}")
+
+    hex_data = payload.get("response")
+    if not isinstance(hex_data, str) or not hex_data:
         raise RuntimeError("Response missing 'response' hex field")
 
-    return hex_data.strip()
+    try:
+        return bytes.fromhex(hex_data.strip())
+    except ValueError as e:
+        raise RuntimeError(f"Invalid hex in response: {e}")
 
+
+def clean_old_sequences(out_dir: str) -> int:
+    """
+    Delete ALL seq_*.bin files in out_dir regardless of seq-length.
+    """
+    pattern = os.path.join(out_dir, "seq_*.bin")
+    files = glob.glob(pattern)
+
+    deleted = 0
+    for fp in files:
+        try:
+            os.remove(fp)
+            deleted += 1
+        except OSError:
+            pass
+
+    return deleted
+
+
+# ----------------------------
+# Main
+# ----------------------------
 
 def main() -> int:
     default_base_url = os.environ.get(ENTROPY_ENDPOINT_ENV, "").strip()
 
-    parser = argparse.ArgumentParser(
-        description="Generate NIST-ready entropy sequences (.bin) using bulk entropy endpoint or local generator."
-    )
+    p = argparse.ArgumentParser(description="Generate NIST-ready entropy sequences (.bin).")
+    p.add_argument("--endpoint", default=default_base_url, help=f"Base endpoint (default: ${ENTROPY_ENDPOINT_ENV}).")
+    p.add_argument("--use", choices=["qse", "local"], default="qse", help="Entropy source.")
+    p.add_argument("--seq-length", type=int, default=1_000_000, help="Bits per sequence.")
+    p.add_argument("--sequences", type=int, default=100, help="Number of sequences.")
+    p.add_argument("--out-dir", default="entropy-streams", help="Output base directory.")
+    p.add_argument("--size", default=None, help="Optional endpoint size path (e.g., 125k).")
+    p.add_argument("--connect-timeout", type=int, default=10, help="HTTP connect timeout (seconds).")
+    p.add_argument("--read-timeout", type=int, default=300, help="HTTP read timeout (seconds).")
+    p.add_argument("--sleep-ms", type=int, default=0, help="Optional sleep between API calls (ms).")
+    args = p.parse_args()
 
-    parser.add_argument(
-        "--endpoint",
-        default=default_base_url,
-        help=f"Base endpoint (default: ${ENTROPY_ENDPOINT_ENV}).",
-    )
-
-    parser.add_argument(
-        "--use",
-        choices=["qse", "local"],
-        default="qse",
-        help="Entropy source: 'qse' to call bulk endpoint, 'local' to use secrets.token_bytes.",
-    )
-
-    parser.add_argument(
-        "--seq-length",
-        type=int,
-        default=1_000_000,
-        help="Bits per sequence (default: 1,000,000 bits).",
-    )
-
-    parser.add_argument(
-        "--sequences",
-        type=int,
-        default=100,
-        help="Number of sequences to generate (default: 100).",
-    )
-
-    parser.add_argument(
-        "--out-dir",
-        default="entropy-streams",
-        help="Output base directory (default: entropy-streams).",
-    )
-
-    parser.add_argument(
-        "--size",
-        default=None,
-        help="Optional endpoint size path (e.g., 1k, 125k, 1m). If omitted, computed from seq-length.",
-    )
-
-    args = parser.parse_args()
-
-    if args.seq_length <= 0:
-        print("seq-length must be positive", file=sys.stderr)
-        return 1
-
-    if args.sequences <= 0:
-        print("sequences must be positive", file=sys.stderr)
+    if args.seq_length <= 0 or args.sequences <= 0:
+        print("seq-length and sequences must be positive", file=sys.stderr)
         return 1
 
     if args.use == "qse" and not args.endpoint:
         print(
             f"Missing base endpoint. Set it via:\n"
-            f"  export {ENTROPY_ENDPOINT_ENV}=\"http://api:8888/entropy/get\"\n"
+            f'  export {ENTROPY_ENDPOINT_ENV}="http://.../entropy/get"\n'
             f"or pass --endpoint explicitly.",
             file=sys.stderr,
         )
@@ -184,40 +180,47 @@ def main() -> int:
     out_dir = os.path.join(args.out_dir, source_folder)
     os.makedirs(out_dir, exist_ok=True)
 
-    # Compute how many bytes we need for one sequence
-    seq_bytes = (args.seq_length + 7) // 8
-    size_path = args.size if args.size else bytes_to_size_path(seq_bytes)
+    # ALWAYS delete old sequences before generating
+    deleted = clean_old_sequences(out_dir)
+    if deleted > 0:
+        print(f"🧹 Cleaned {deleted} old files from: {out_dir}")
+    else:
+        print(f"🧹 No old seq_*.bin files found in: {out_dir}")
+
+    seq_bytes_needed = (args.seq_length + 7) // 8
+    size_path = args.size if args.size else bytes_to_size_path(seq_bytes_needed)
+
+    timeout = (args.connect_timeout, args.read_timeout)
+    session = make_session(pool_size=50)
 
     if args.use == "qse":
-        endpoint_base = args.endpoint.rstrip("/")
-        if not endpoint_base.endswith("/get"):
-            endpoint_base = endpoint_base + "/get"
-        print(f"Using bulk endpoint: {endpoint_base}/{size_path}")
-        print(f"Sequence size: {args.seq_length} bits (~{seq_bytes} bytes)")
+        ep = normalize_endpoint(args.endpoint)
+        print(f"Using bulk endpoint: {ep}/{size_path}")
+        print(f"Sequence size: {args.seq_length} bits (~{seq_bytes_needed} bytes)")
+        print(f"Timeouts: connect={args.connect_timeout}s read={args.read_timeout}s, retries=on")
+        if args.sleep_ms:
+            print(f"Sleep between calls: {args.sleep_ms}ms")
 
-    # Generate sequences one at a time
     for i in range(1, args.sequences + 1):
+        out_path = os.path.join(out_dir, f"seq_{i:04d}_{args.seq_length}bits.bin")
+
         try:
             if args.use == "qse":
-                hex_data = fetch_bulk_hex(args.endpoint, size_path)
-                bits = hex_to_bits(hex_data)
-                if len(bits) < args.seq_length:
-                    raise RuntimeError(
-                        f"API returned {len(bits)} bits, need {args.seq_length}"
-                    )
-                bits = bits[: args.seq_length]
-                summary = f"{len(bits)} bits via bulk entropy endpoint ({size_path})"
+                raw = fetch_bulk_bytes(session, args.endpoint, size_path, timeout=timeout)
+                if len(raw) < seq_bytes_needed:
+                    raise RuntimeError(f"API returned {len(raw)} bytes, need >= {seq_bytes_needed}")
+                trimmed = trim_to_bits(raw, args.seq_length)
+                summary = f"{args.seq_length} bits via bulk endpoint ({size_path})"
+                if args.sleep_ms > 0:
+                    time.sleep(args.sleep_ms / 1000.0)
             else:
-                bits = local_entropy_bits(args.seq_length)
-                summary = f"{len(bits)} bits via local generator"
+                trimmed = local_entropy_bytes(args.seq_length)
+                summary = f"{args.seq_length} bits via local generator"
 
-            raw_bytes = bits_to_bytes(bits)
-
-            out_path = os.path.join(out_dir, f"seq_{i:04d}_{args.seq_length}bits.bin")
             with open(out_path, "wb") as f:
-                f.write(raw_bytes)
+                f.write(trimmed)
 
-            print(f"[{i}/{args.sequences}] Wrote {summary} -> {out_path} ({len(raw_bytes)} bytes)")
+            print(f"[{i}/{args.sequences}] Wrote {summary} -> {out_path} ({len(trimmed)} bytes)")
 
         except Exception as exc:
             print(f"[{i}/{args.sequences}] Failed: {exc}", file=sys.stderr)

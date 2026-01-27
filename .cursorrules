@@ -1,0 +1,40 @@
+# Cursor Rules for QSE Demos Project
+
+## Git Workflow Rules
+
+When working with Git, always follow these rules:
+
+### Starting New Work
+- Always start from an up-to-date main branch
+- Commands: `git checkout main && git pull origin main && git checkout -b feature/your-feature-name`
+- Never create a branch without first pulling latest main
+
+### After PR is Merged
+- Switch back to main and pull latest changes
+- Commands: `git checkout main && git pull origin main && git branch -d feature/name && git push origin --delete feature/name`
+- Always clean up merged branches (both local and remote)
+
+### Starting Next Feature
+- Always pull main first: `git checkout main && git pull origin main`
+- Then create new branch: `git checkout -b feature/next-feature-name`
+
+### Key Principles
+1. **Never commit directly to main** - always use feature branches
+2. **Always pull main before creating new branch** - prevents merge conflicts
+3. **Clean up merged branches** - keeps repository tidy
+4. **Resolve conflicts on feature branch** - never on main
+
+### If Merge Conflicts Occur
+- Resolve conflicts on the feature branch, not main
+- Use `git rebase main` or `git merge main` on feature branch
+- Never force push to main
+
+## Code Style
+- Follow existing code patterns in the project
+- Use descriptive commit messages
+- Keep commits focused and atomic
+
+## Project-Specific Notes
+- Dieharder source files should be ignored (cloned during build)
+- Only custom integration scripts should be committed
+- Docker files are part of the deployment setup

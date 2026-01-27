@@ -81,6 +81,16 @@ fi
 # Create directories
 mkdir -p entropy-streams/qse entropy-streams/system data dieharder-results/qse dieharder-results/system
 
+# Remove ALL previous entropy sequences (any seq-length)
+rm -f entropy-streams/qse/seq_*.bin
+rm -f entropy-streams/system/seq_*.bin
+
+# Remove previously concatenated files
+rm -f data/qse_all.bin
+rm -f data/system_all.bin
+
+echo "✅ Cleanup complete"
+
 # ============================================
 # Step 1: Generate QSE entropy streams
 # ============================================
@@ -88,9 +98,8 @@ echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📥 Step 1/8: Generate QSE entropy streams"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Using endpoint: ${ENTROPY_ENDPOINT}"
 echo
-python3 "$GEN_ENTROPY_SCRIPT" --use qse --seq-length "$SEQ_LENGTH" --sequences "$SEQUENCES"
+python3 "$GEN_ENTROPY_SCRIPT" --use qse --seq-length "$SEQ_LENGTH" --sequences "$SEQUENCES" --sleep-ms 50
 echo "✅ Step 1 complete: QSE entropy generated"
 
 # ============================================
@@ -243,6 +252,26 @@ python3 render_scorecard_html.py \
   --scorecard "dieharder-results/scorecard.json" \
   --out "dieharder-results/scorecard.html"
 echo "✅ Created: dieharder-results/scorecard.html"
+
+# ============================================
+# Archive scorecard to past reports
+# ============================================
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📦 Archiving scorecard to past reports"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Create past-reports directory if it doesn't exist
+mkdir -p "dieharder-results/past-reports"
+
+# Generate filename with date
+DATE=$(date +"%Y%m%d_%H%M%S")
+ARCHIVE_NAME="scorecard_${SEQUENCES}_seqs_${SEQ_LENGTH}_bits_${DATE}.html"
+ARCHIVE_PATH="dieharder-results/past-reports/${ARCHIVE_NAME}"
+
+# Copy scorecard.html to past-reports
+cp "dieharder-results/scorecard.html" "$ARCHIVE_PATH"
+echo "✅ Archived: $ARCHIVE_PATH"
 
 # ============================================
 # Done!

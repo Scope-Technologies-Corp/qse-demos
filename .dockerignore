@@ -38,7 +38,9 @@ Thumbs.db
 sts-2.1.2/entropy-streams/
 sts-2.1.2/data/
 sts-2.1.2/sts-results/
-sts-2.1.2/experiments/
+# Note: sts-2.1.2/experiments/ is NOT excluded - needed for STS binary
+# Exclude pre-built binaries (will be built fresh in Docker)
+sts-2.1.2/assess
 dieharder/entropy-streams/
 dieharder/data/
 dieharder/dieharder-results/

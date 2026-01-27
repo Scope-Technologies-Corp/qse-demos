@@ -4,6 +4,19 @@ compare_dieharder_results.py
 
 Compare QSE and System dieharder parsed results (report.json) and output comparison.json
 
+Comparison Methodology (based on Dieharder documentation):
+1. FAILED tests (p < 0.0001 or p > 0.9999) are the PRIMARY indicator of randomness weaknesses
+2. WEAK tests (p < 0.005 or p > 0.995) are SECONDARY concerns - some are statistically expected
+3. Overall winner is determined by:
+   - Priority 1: Fewer FAILED tests = stronger
+   - Priority 2: Fewer WEAK tests (if same failed count) = stronger
+   - Priority 3: More PASSED tests (if same failed/weak counts) = stronger
+   - Priority 4: P-value distribution quality (closer to uniform = better)
+4. Individual test-by-test comparisons are for detailed analysis but don't override overall failure counts
+
+Note: P-values closer to 0.5 indicate better randomness (more uniform distribution).
+However, the absence of extreme p-values (FAILED) is more important than p-value proximity to 0.5.
+
 Usage:
   python3 compare_dieharder_results.py \
     --qse dieharder-results/qse/report.json \
@@ -111,35 +124,57 @@ def main() -> int:
         comparisons.append(row)
         win_counts[row["winner"]] += 1
 
-    # Overall verdict
-    # Priority 1: If one passes and the other fails, the one that passes wins
-    # Priority 2: If both pass or both fail, compare by individual test wins
-    # Priority 3: If still tied, it's a tie
-    qse_overall_pass = qse["summary"]["overall_pass"]
-    sys_overall_pass = sys["summary"]["overall_pass"]
+    # Overall verdict based on Dieharder strength assessment principles:
+    # Priority 1: Fewer FAILED tests (p < 0.0001 or p > 0.9999) = stronger
+    # Priority 2: Fewer WEAK tests (if same failed count) = stronger
+    # Priority 3: More PASSED tests (if same failed/weak counts) = stronger
+    # Priority 4: P-value distribution quality (closer to uniform = better)
+    #   When both sources pass (0 failed), p-value distribution becomes more important
+    # Individual test-by-test wins are less important than overall failure counts
+    
+    qse_failed = qse["summary"]["failed_tests"]
+    sys_failed = sys["summary"]["failed_tests"]
+    qse_weak = qse["summary"]["weak_tests"]
+    sys_weak = sys["summary"]["weak_tests"]
+    qse_passed = qse["summary"]["passed_tests"]
+    sys_passed = sys["summary"]["passed_tests"]
+    
+    # Calculate p-value distribution quality (closer to 0.5 = better uniform distribution)
+    qse_p_values = [t["p_value"] for t in qse["tests"]]
+    sys_p_values = [t["p_value"] for t in sys["tests"]]
+    
+    qse_avg_dist = sum(abs(p - 0.5) for p in qse_p_values) / len(qse_p_values) if qse_p_values else 0.5
+    sys_avg_dist = sum(abs(p - 0.5) for p in sys_p_values) / len(sys_p_values) if sys_p_values else 0.5
     
     overall_winner = "tie"
     
-    if qse_overall_pass and not sys_overall_pass:
-        # QSE passes, System fails -> QSE wins
+    # Priority 1: Compare FAILED tests (most critical - indicates real problems)
+    if qse_failed < sys_failed:
         overall_winner = "qse"
-    elif sys_overall_pass and not qse_overall_pass:
-        # System passes, QSE fails -> System wins
+    elif sys_failed < qse_failed:
         overall_winner = "system"
-    elif qse_overall_pass and sys_overall_pass:
-        # Both pass - compare by individual test wins
-        if win_counts["qse"] > win_counts["system"]:
-            overall_winner = "qse"
-        elif win_counts["system"] > win_counts["qse"]:
-            overall_winner = "system"
-        # else: tie (both pass and equal wins)
     else:
-        # Both fail - compare by individual test wins
-        if win_counts["qse"] > win_counts["system"]:
+        # Same number of failed tests - compare WEAK tests
+        if qse_weak < sys_weak:
             overall_winner = "qse"
-        elif win_counts["system"] > win_counts["qse"]:
+        elif sys_weak < qse_weak:
             overall_winner = "system"
-        # else: tie (both fail and equal wins)
+        else:
+            # Same failed and weak - compare PASSED tests
+            if qse_passed > sys_passed:
+                overall_winner = "qse"
+            elif sys_passed > qse_passed:
+                overall_winner = "system"
+            else:
+                # Same counts - compare p-value distribution quality
+                # For truly random sources, p-values should be uniformly distributed
+                # Average distance from 0.5 indicates how uniform the distribution is
+                # Smaller distance = more uniform = stronger randomness
+                if qse_avg_dist < sys_avg_dist:
+                    overall_winner = "qse"
+                elif sys_avg_dist < qse_avg_dist:
+                    overall_winner = "system"
+                # else: tie (identical performance)
 
     output = {
         "overall": {
@@ -147,6 +182,14 @@ def main() -> int:
             "system_overall_pass": sys["summary"]["overall_pass"],
             "winner": overall_winner,
             "win_counts": win_counts,
+            "qse_failed": qse_failed,
+            "sys_failed": sys_failed,
+            "qse_weak": qse_weak,
+            "sys_weak": sys_weak,
+            "qse_passed": qse_passed,
+            "sys_passed": sys_passed,
+            "qse_pvalue_avg_dist_from_05": round(qse_avg_dist, 6),
+            "sys_pvalue_avg_dist_from_05": round(sys_avg_dist, 6),
         },
         "comparisons": comparisons,
     }
@@ -157,8 +200,10 @@ def main() -> int:
 
     print("✅ Comparison generated.")
     print(f"Winner: {overall_winner}")
-    print(f"QSE: {qse['summary']['passed_tests']}/{qse['summary']['total_tests']} passed")
-    print(f"System: {sys['summary']['passed_tests']}/{sys['summary']['total_tests']} passed")
+    print(f"QSE: {qse_passed} passed, {qse_weak} weak, {qse_failed} failed")
+    print(f"System: {sys_passed} passed, {sys_weak} weak, {sys_failed} failed")
+    print(f"P-value distribution (avg distance from 0.5): QSE={qse_avg_dist:.6f}, System={sys_avg_dist:.6f} (lower = better)")
+    print(f"Individual test wins: QSE={win_counts['qse']}, System={win_counts['system']}, Ties={win_counts['tie']}")
     print(f"Saved: {args.out}")
     return 0
 

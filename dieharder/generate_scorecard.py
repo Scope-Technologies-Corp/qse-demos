@@ -25,17 +25,54 @@ def load_json(path: str) -> Dict[str, Any]:
 
 
 def headline_verdict(qse: Dict[str, Any], sys: Dict[str, Any], comparison: Dict[str, Any]) -> str:
-    if qse["summary"]["overall_pass"] and sys["summary"]["overall_pass"]:
+    """
+    Generate headline verdict based on Dieharder assessment.
+    Note: Dieharder is a strength assessment tool, not a binary pass/fail.
+    It evaluates randomness strength through p-value distribution analysis.
+    Some WEAK results are statistically expected with many tests.
+    """
+    qse_pass = qse["summary"]["overall_pass"]
+    sys_pass = sys["summary"]["overall_pass"]
+    qse_failed = qse["summary"]["failed_tests"]
+    sys_failed = sys["summary"]["failed_tests"]
+    qse_weak = qse["summary"]["weak_tests"]
+    sys_weak = sys["summary"]["weak_tests"]
+    
+    if qse_pass and sys_pass:
         if comparison["overall"]["winner"] == "qse":
-            return "Both sources pass Dieharder tests; QSE shows slightly stronger performance across tests."
+            return "Both sources demonstrate strong randomness in Dieharder tests; QSE shows slightly stronger performance across tests."
         elif comparison["overall"]["winner"] == "system":
-            return "Both sources pass Dieharder tests; system entropy shows slightly stronger performance across tests."
-        return "Both sources pass Dieharder tests; performance is broadly comparable."
-    if qse["summary"]["overall_pass"]:
-        return "QSE entropy passes Dieharder tests while system entropy did not meet all thresholds."
-    if sys["summary"]["overall_pass"]:
-        return "System entropy passes Dieharder tests while QSE entropy did not meet all thresholds."
-    return "Neither source met all Dieharder test thresholds under this run configuration."
+            return "Both sources demonstrate strong randomness in Dieharder tests; system entropy shows slightly stronger performance across tests."
+        return "Both sources demonstrate strong randomness in Dieharder tests; performance is broadly comparable."
+    
+    if qse_pass:
+        if sys_failed > 0:
+            return f"QSE entropy demonstrates strong randomness in Dieharder tests. System entropy shows {sys_failed} failed test(s), indicating potential weaknesses."
+        else:
+            return f"QSE entropy demonstrates strong randomness in Dieharder tests. System entropy shows {sys_weak} weak test(s), which may indicate statistical variation or minor concerns."
+    
+    if sys_pass:
+        if qse_failed > 0:
+            return f"System entropy demonstrates strong randomness in Dieharder tests. QSE entropy shows {qse_failed} failed test(s), indicating potential weaknesses."
+        else:
+            return f"System entropy demonstrates strong randomness in Dieharder tests. QSE entropy shows {qse_weak} weak test(s), which may indicate statistical variation or minor concerns."
+    
+    # Both have issues - determine winner based on failure counts
+    winner = comparison["overall"]["winner"]
+    if qse_failed > 0 or sys_failed > 0:
+        if winner == "qse":
+            return f"Both sources show concerns in Dieharder tests. QSE demonstrates stronger performance with {qse_failed} failed and {qse_weak} weak tests, compared to System's {sys_failed} failed and {sys_weak} weak tests. Failed tests (p < 0.0001 or p > 0.9999) indicate potential randomness weaknesses."
+        elif winner == "system":
+            return f"Both sources show concerns in Dieharder tests. System demonstrates stronger performance with {sys_failed} failed and {sys_weak} weak tests, compared to QSE's {qse_failed} failed and {qse_weak} weak tests. Failed tests (p < 0.0001 or p > 0.9999) indicate potential randomness weaknesses."
+        else:
+            return f"Both sources show similar concerns in Dieharder tests. QSE: {qse_failed} failed, {qse_weak} weak. System: {sys_failed} failed, {sys_weak} weak. Failed tests indicate potential randomness weaknesses."
+    else:
+        if winner == "qse":
+            return f"Both sources show elevated weak test counts. QSE demonstrates stronger performance with {qse_weak} weak tests compared to System's {sys_weak} weak tests. This may indicate statistical variation or require further investigation."
+        elif winner == "system":
+            return f"Both sources show elevated weak test counts. System demonstrates stronger performance with {sys_weak} weak tests compared to QSE's {qse_weak} weak tests. This may indicate statistical variation or require further investigation."
+        else:
+            return f"Both sources show elevated weak test counts. QSE: {qse_weak} weak tests. System: {sys_weak} weak tests. This may indicate statistical variation or require further investigation with additional test runs."
 
 
 def main() -> int:
@@ -73,6 +110,8 @@ def main() -> int:
         "system_lowest_p_value_test": sys["lowest_p_value_test"],
         "qse_borderline_tests": qse["borderline_tests"],
         "system_borderline_tests": sys["borderline_tests"],
+        "qse_suspect_tests": qse.get("suspect_tests", []),
+        "system_suspect_tests": sys.get("suspect_tests", []),
         "wins_by_test": comp["overall"]["win_counts"],
         "comparisons": comp["comparisons"],
     }

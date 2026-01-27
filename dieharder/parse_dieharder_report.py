@@ -37,6 +37,20 @@ class TestResult:
     psamples: int
     p_value: float
     assessment: str  # PASSED, WEAK, FAILED
+    test_reliability: str = "good"  # good, suspect, do_not_use
+
+
+# Known unreliable tests per Dieharder documentation:
+# https://webhome.phy.duke.edu/~rgb/General/dieharder.php
+# Tests marked "Do Not Use" - should be filtered out
+TESTS_DO_NOT_USE = {
+    "diehard_sums",  # -d 14: produces systematically non-flat p-value distribution
+}
+
+# Tests marked "Suspect" - should be flagged but included
+TESTS_SUSPECT = {
+    "diehard_operm5",  # -d 1: seems to fail all generators (likely buggy)
+}
 
 
 # Matches dieharder output lines with -D test_name -D pvalues:
@@ -101,8 +115,21 @@ def parse_dieharder_output(text: str) -> List[TestResult]:
         m = SIMPLE_ROW_REGEX.match(line)
         if m:
             test_name = m.group(1).strip()
+            
+            # Filter out "Do Not Use" tests
+            if test_name in TESTS_DO_NOT_USE:
+                continue
+            
             p_value = float(m.group(2))
             assessment = determine_assessment(p_value)
+            
+            # Determine test reliability
+            if test_name in TESTS_SUSPECT:
+                reliability = "suspect"
+            elif test_name in TESTS_DO_NOT_USE:
+                reliability = "do_not_use"
+            else:
+                reliability = "good"
             
             results.append(
                 TestResult(
@@ -112,6 +139,7 @@ def parse_dieharder_output(text: str) -> List[TestResult]:
                     psamples=0,  # Not available in simple format
                     p_value=p_value,
                     assessment=assessment,
+                    test_reliability=reliability,
                 )
             )
             continue
@@ -120,11 +148,24 @@ def parse_dieharder_output(text: str) -> List[TestResult]:
         m = PIPE_ROW_REGEX.match(line)
         if m:
             test_name = m.group(1).strip()
+            
+            # Filter out "Do Not Use" tests
+            if test_name in TESTS_DO_NOT_USE:
+                continue
+            
             ntuple = int(m.group(2))
             tsamples = int(m.group(3))
             psamples = int(m.group(4))
             p_value = float(m.group(5))
             assessment = m.group(6).strip()
+            
+            # Determine test reliability
+            if test_name in TESTS_SUSPECT:
+                reliability = "suspect"
+            elif test_name in TESTS_DO_NOT_USE:
+                reliability = "do_not_use"
+            else:
+                reliability = "good"
             
             results.append(
                 TestResult(
@@ -134,6 +175,7 @@ def parse_dieharder_output(text: str) -> List[TestResult]:
                     psamples=psamples,
                     p_value=p_value,
                     assessment=assessment,
+                    test_reliability=reliability,
                 )
             )
             continue
@@ -156,6 +198,18 @@ def parse_dieharder_output(text: str) -> List[TestResult]:
                         assessment = parts[5].strip()
                         
                         if assessment in ['PASSED', 'WEAK', 'FAILED']:
+                            # Filter out "Do Not Use" tests
+                            if test_name in TESTS_DO_NOT_USE:
+                                continue
+                            
+                            # Determine test reliability
+                            if test_name in TESTS_SUSPECT:
+                                reliability = "suspect"
+                            elif test_name in TESTS_DO_NOT_USE:
+                                reliability = "do_not_use"
+                            else:
+                                reliability = "good"
+                            
                             results.append(
                                 TestResult(
                                     test_name=test_name,
@@ -164,6 +218,7 @@ def parse_dieharder_output(text: str) -> List[TestResult]:
                                     psamples=psamples,
                                     p_value=p_value,
                                     assessment=assessment,
+                                    test_reliability=reliability,
                                 )
                             )
                 except (ValueError, IndexError):
@@ -176,6 +231,8 @@ def parse_dieharder_output(text: str) -> List[TestResult]:
 def build_report(results: List[TestResult]) -> Dict[str, Any]:
     """
     Build structured report from test results.
+    Note: Dieharder is a strength assessment tool, not a binary pass/fail.
+    Some WEAK results are statistically expected with many tests.
     """
     if not results:
         raise ValueError("❌ No test results found in dieharder output.")
@@ -184,9 +241,16 @@ def build_report(results: List[TestResult]) -> Dict[str, Any]:
     passed_tests = sum(1 for r in results if r.assessment == "PASSED")
     weak_tests = sum(1 for r in results if r.assessment == "WEAK")
     failed_tests = sum(1 for r in results if r.assessment == "FAILED")
+    suspect_tests = sum(1 for r in results if r.test_reliability == "suspect")
     
-    # Overall pass: all tests must be PASSED (no WEAK or FAILED)
-    overall_pass = failed_tests == 0 and weak_tests == 0
+    # Overall pass criteria (statistically sound):
+    # - No FAILED tests (p < 0.0001 or p > 0.9999 indicates real problems)
+    # - WEAK tests < 5% of total (some WEAK results are expected with ~110 tests)
+    #   With WEAK threshold at p < 0.005 or p > 0.995, ~1% should naturally be WEAK
+    #   Allowing 5% provides reasonable margin for statistical variation
+    weak_threshold = 0.05  # Allow up to 5% WEAK tests
+    weak_percentage = weak_tests / total_tests if total_tests > 0 else 0.0
+    overall_pass = (failed_tests == 0) and (weak_percentage < weak_threshold)
     
     # Find weakest test (lowest p-value among failed/weak, or lowest overall)
     weakest = min(results, key=lambda r: (0 if r.assessment == "PASSED" else 1, r.p_value))
@@ -197,17 +261,23 @@ def build_report(results: List[TestResult]) -> Dict[str, Any]:
     # Borderline tests (WEAK or p-value close to thresholds)
     borderline = [r for r in results if r.assessment == "WEAK" or (r.p_value < 0.01 or r.p_value > 0.99)]
     
+    # Separate suspect tests for flagging
+    suspect_test_list = [r for r in results if r.test_reliability == "suspect"]
+    
     return {
         "summary": {
             "total_tests": total_tests,
             "passed_tests": passed_tests,
             "weak_tests": weak_tests,
             "failed_tests": failed_tests,
+            "suspect_tests": suspect_tests,
             "overall_pass": overall_pass,
+            "note": "Dieharder is a strength assessment tool. Some WEAK results are statistically expected. Only FAILED tests (p < 0.0001 or p > 0.9999) indicate potential randomness weaknesses.",
         },
         "weakest_test": asdict(weakest),
         "lowest_p_value_test": asdict(lowest_p_value),
         "borderline_tests": [asdict(r) for r in borderline],
+        "suspect_tests": [asdict(r) for r in suspect_test_list],
         "tests": [asdict(r) for r in results],
     }
 
@@ -224,6 +294,7 @@ def write_csv(results: List[TestResult], csv_path: str) -> None:
                 "psamples",
                 "p_value",
                 "assessment",
+                "test_reliability",
             ],
         )
         writer.writeheader()
@@ -258,9 +329,11 @@ def main() -> int:
     print("✅ Parsed dieharder report successfully.")
     print(f"JSON: {args.out}")
     print(f"CSV:  {csv_path}")
-    print(f"Overall pass: {report_obj['summary']['overall_pass']} "
+    print(f"Strength assessment: {'STRONG' if report_obj['summary']['overall_pass'] else 'REVIEW'} "
           f"({report_obj['summary']['passed_tests']}/{report_obj['summary']['total_tests']} passed, "
           f"{report_obj['summary']['weak_tests']} weak, {report_obj['summary']['failed_tests']} failed)")
+    if report_obj['summary'].get('suspect_tests', 0) > 0:
+        print(f"⚠️  Note: {report_obj['summary']['suspect_tests']} suspect test(s) included (may have known issues)")
 
     return 0
 
