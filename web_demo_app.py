@@ -59,8 +59,20 @@ def key_from_weak_seed_timestamp(seed_u64: int) -> bytes:
     return hkdf.derive(seed_le)
 
 
-def key_from_system_entropy() -> tuple[bytes, bytes]:
-    seed_bytes = os.urandom(4)
+def key_from_system_entropy(bits: int = 32) -> tuple[bytes, bytes]:
+    """
+    System entropy key derivation: HKDF-SHA256 over N bytes from os.urandom.
+    This uses the operating system's cryptographically secure random number generator.
+    
+    Args:
+        bits: Number of bits of entropy (default: 32). Will be rounded up to nearest byte.
+    
+    Returns:
+        (key, seed_bytes) - seed_bytes for demo visibility only
+    """
+    bytes_needed = (bits + 7) // 8  # Round up to nearest byte
+    seed_bytes = os.urandom(bytes_needed)
+    
     hkdf = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
@@ -102,6 +114,109 @@ def parse_qrng_b64(b64_text: str) -> bytes:
     if len(raw) > 256:
         raw = raw[:256]
     return raw
+
+
+def brute_force_system_entropy(
+    nonce: bytes,
+    ct: bytes,
+    aad: bytes,
+    seed_bytes: bytes,
+    expected_prefix: bytes,
+    progress_callback=None,
+) -> Dict[str, Any]:
+    """
+    Brute-force system entropy seed by trying all possible seed values.
+    Used when entropy bit count is small enough to be brute-forced.
+    """
+    import math
+    
+    # Calculate search space based on seed bytes length
+    seed_bits = len(seed_bytes) * 8
+    max_seed_value = (1 << (seed_bits)) - 1  # 2^bits - 1
+    
+    t0 = time.time()
+    guesses = 0
+    last_progress = time.time()
+    progress_interval = 0.1
+    
+    # For very large search spaces, we'll limit attempts to prevent hanging
+    # But for small spaces (<= 64 bits), we'll try all values
+    max_attempts = min(max_seed_value + 1, 2**64)  # Cap at 2^64 for safety
+    
+    for seed_int in range(max_attempts):
+        guesses += 1
+        
+        # Convert integer to bytes (little-endian, matching key_from_system_entropy)
+        bytes_needed = len(seed_bytes)
+        seed_candidate = seed_int.to_bytes(bytes_needed, byteorder='little')
+        
+        # Progress updates
+        if time.time() - last_progress >= progress_interval:
+            elapsed = time.time() - t0
+            rate = guesses / max(elapsed, 1e-9)
+            remaining = max_attempts - guesses
+            eta = remaining / max(rate, 1e-9) if rate > 0 else 0
+            
+            if progress_callback:
+                progress_callback({
+                    'guesses': guesses,
+                    'total': max_attempts,
+                    'rate': rate,
+                    'elapsed': elapsed,
+                    'eta': eta,
+                    'current_seed': {
+                        'seed_value': seed_int,
+                        'seed_hex': seed_candidate.hex(),
+                    },
+                })
+            last_progress = time.time()
+        
+        # Try to derive key and decrypt
+        try:
+            hkdf = HKDF(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=b"entropy-demo-system-salt-v1",
+                info=b"entropy-demo-system-info-v1",
+            )
+            key = hkdf.derive(seed_candidate)
+            pt = decrypt_aesgcm(key, nonce, ct, aad)
+            
+            # Check if decryption matches expected prefix
+            if pt.startswith(expected_prefix):
+                t1 = time.time()
+                elapsed = max(t1 - t0, 1e-9)
+                return {
+                    'success': True,
+                    'recovered_seed': seed_int,
+                    'recovered_seed_bytes': seed_candidate.hex(),
+                    'recovered_plaintext': pt.decode("utf-8", errors="replace"),
+                    'guesses': guesses,
+                    'elapsed_sec': elapsed,
+                    'guesses_per_sec': guesses / elapsed,
+                    'window_seconds': 0,
+                    'search_space_size': max_attempts,
+                    'search_space_bits': math.log2(max_attempts) if max_attempts > 0 else 0,
+                }
+        except Exception:
+            # Decryption failed, try next seed
+            pass
+    
+    # Brute force failed
+    t1 = time.time()
+    elapsed = max(t1 - t0, 1e-9)
+    return {
+        'success': False,
+        'recovered_seed': None,
+        'recovered_seed_bytes': None,
+        'recovered_plaintext': None,
+        'guesses': guesses,
+        'elapsed_sec': elapsed,
+        'guesses_per_sec': guesses / elapsed,
+        'window_seconds': 0,
+        'search_space_size': max_attempts,
+        'search_space_bits': math.log2(max_attempts) if max_attempts > 0 else 0,
+    }
 
 
 def brute_force_timestamp_window(
@@ -199,13 +314,83 @@ def brute_force_timestamp_window(
     }
 
 
+def expected_time_for_bits_quantum(bits: float, guesses_per_sec: float) -> float:
+    """
+    Calculate expected time to brute force with quantum computer using Grover's algorithm.
+    Grover's algorithm provides a quadratic speedup: search space becomes 2^(bits/2) instead of 2^bits.
+    
+    Args:
+        bits: Bit strength of the key
+        guesses_per_sec: Quantum computer guesses per second (hypothetical rate)
+    
+    Returns:
+        Expected time in seconds (or infinity if too large)
+    """
+    import math
+    
+    # Grover's algorithm reduces search space from 2^bits to 2^(bits/2)
+    quantum_bits = bits / 2.0
+    
+    # For very large quantum bit values (>512), return infinity
+    if quantum_bits > 512:
+        return float('inf')
+    elif quantum_bits > 256:
+        # Use logarithmic calculation to avoid overflow
+        log_time = quantum_bits * math.log2(2.0) - math.log2(max(guesses_per_sec, 1e-12))
+        if log_time > 700:
+            return float('inf')
+        try:
+            return 2.0 ** log_time
+        except OverflowError:
+            return float('inf')
+    else:
+        # For smaller values, use direct calculation
+        try:
+            return (2.0 ** quantum_bits) / max(guesses_per_sec, 1e-12)
+        except OverflowError:
+            return float('inf')
+
+
 def expected_time_for_bits(bits: float, guesses_per_sec: float) -> float:
-    return (2.0 ** bits) / max(guesses_per_sec, 1e-12)
+    """
+    Calculate expected time to brute force a key with given bit strength.
+    Uses logarithmic calculation for large bit values to avoid overflow.
+    
+    For very large bit values (>1024), the result is effectively infinite
+    for practical purposes, so we return infinity.
+    """
+    import math
+    
+    # For very large bit values (>1024), use logarithmic calculation to avoid overflow
+    if bits > 1024:
+        # For bit values > 1024, the time to break is effectively infinite
+        # Even at 1 trillion guesses/sec, 2^1024 seconds is astronomical
+        # We'll return infinity for display purposes
+        return float('inf')
+    elif bits > 512:
+        # For 512-1024 bits, use logarithmic calculation to avoid overflow
+        # log(2^bits / rate) = bits * log(2) - log(rate)
+        log_time = bits * math.log2(2.0) - math.log2(max(guesses_per_sec, 1e-12))
+        # If log_time > 700, result would overflow, so return infinity
+        if log_time > 700:
+            return float('inf')
+        try:
+            return 2.0 ** log_time
+        except OverflowError:
+            return float('inf')
+    else:
+        # For smaller values, use direct calculation
+        try:
+            return (2.0 ** bits) / max(guesses_per_sec, 1e-12)
+        except OverflowError:
+            return float('inf')
 
 
 def human_time(seconds: Optional[float]) -> str:
     if seconds is None:
         return "n/a"
+    if seconds == float('inf') or seconds > 1e100:
+        return "∞ (practically infinite)"
     if seconds < 1:
         return f"{seconds:.4f}s"
     if seconds < 60:
@@ -220,6 +405,10 @@ def human_time(seconds: Optional[float]) -> str:
     if days < 365:
         return f"{days:.2f}d"
     years = days / 365
+    if years < 1e6:
+        return f"{years:.2e} years"
+    # For extremely large values, convert to years with scientific notation
+    # This is more readable than showing seconds
     return f"{years:.2e} years"
 
 
@@ -318,8 +507,15 @@ def fp_u64(x: int) -> str:
 
 
 def make_key_weak(idx: int, bits: int, seed_space_bits: int, q_uniqueness: int) -> Dict[str, Any]:
-    mask = (1 << seed_space_bits) - 1
-    base = int(time.time()) & mask
+    # Small seed space (e.g. 12 bits): same base for all keys in this run -> shared prime p -> vulnerable.
+    # Large seed space (e.g. 64+ bits): unique base per key -> no shared primes -> secure.
+    if seed_space_bits <= 32:
+        mask = (1 << seed_space_bits) - 1
+        base = int(time.time()) & mask
+        # base is same for every key -> same p for all -> many shared factors
+    else:
+        # Simulate large entropy: give each key a unique seed so no primes are shared
+        base = ((int(time.time()) << 32) | idx) & ((1 << 64) - 1)
     rng_p = XorShift64(seed=base ^ 0xA5A5A5A5A5A5A5A5)
     p = gen_prime(bits // 2, rng_p)
     mixed = (base + (idx * q_uniqueness)) & ((1 << 64) - 1)
@@ -381,6 +577,14 @@ def entropy_demo():
     window = int(data.get('window', 120))
     qrng_b64 = data.get('qrng_b64', '').strip()
     use_system_entropy = data.get('use_system_entropy', False)
+    system_entropy_bits = int(data.get('system_entropy_bits', 32))
+    
+    # Validate system entropy bits
+    if use_system_entropy:
+        if system_entropy_bits < 8:
+            return jsonify({'error': 'System entropy bits must be at least 8'}), 400
+        if system_entropy_bits > 2048:
+            return jsonify({'error': 'System entropy bits cannot exceed 2048'}), 400
     
     if not qrng_b64:
         return jsonify({'error': 'QRNG base64 data required'}), 400
@@ -400,21 +604,47 @@ def entropy_demo():
     # Weak/System entropy case
     weak_seed = None
     weak_seed_timestamp = None
+    actual_bits = None  # Initialize for use in assumptions
+    system_seed_bytes = None  # Initialize for use in result
     
     if use_system_entropy:
-        system_key, system_seed_bytes = key_from_system_entropy()
+        system_key, system_seed_bytes = key_from_system_entropy(system_entropy_bits)
         system_nonce, system_ct = encrypt_aesgcm(system_key, plaintext, aad)
-        attack = {
-            'success': False,
-            'recovered_seed': None,
-            'recovered_plaintext': None,
-            'guesses': 0,
-            'elapsed_sec': 0.0,
-            'guesses_per_sec': 0.0,
-            'window_seconds': 0,
-            'search_space_size': 2**32,
-            'search_space_bits': 32.0,
-        }
+        # Calculate actual bits used (may be rounded up to nearest byte)
+        actual_bits = len(system_seed_bytes) * 8
+        search_space_size = 2 ** actual_bits
+        
+        # If entropy is small enough (<= 64 bits), actually brute-force it
+        # This demonstrates that small entropy can be broken
+        if actual_bits <= 64:
+            # Perform actual brute-force attack
+            def progress_cb(update):
+                progress_updates.append(update)
+            
+            attack = brute_force_system_entropy(
+                nonce=system_nonce,
+                ct=system_ct,
+                aad=aad,
+                seed_bytes=system_seed_bytes,
+                expected_prefix=prefix,
+                progress_callback=progress_cb,
+            )
+            # Store the actual seed bytes for reference (but don't expose in response for security)
+            attack['actual_seed_bytes_hex'] = system_seed_bytes.hex() if attack['success'] else None
+        else:
+            # For larger entropy, just report theoretical time (too large to brute-force)
+            attack = {
+                'success': False,
+                'recovered_seed': None,
+                'recovered_seed_bytes': None,
+                'recovered_plaintext': None,
+                'guesses': 0,
+                'elapsed_sec': 0.0,
+                'guesses_per_sec': 0.0,
+                'window_seconds': 0,
+                'search_space_size': search_space_size,
+                'search_space_bits': float(actual_bits),
+            }
         entropy_type = 'system'
     else:
         weak_seed = int(time.time())
@@ -456,13 +686,58 @@ def entropy_demo():
     
     if use_system_entropy:
         system_expected_worst = expected_time_for_bits(space_bits, weak_rate)
+        weak_expected_worst = None  # Not used for system entropy
     else:
         weak_expected_worst = expected_time_for_bits(space_bits, weak_rate)
+        system_expected_worst = None  # Not used for weak entropy
+    
+    # Quantum computing analysis
+    # Fair comparison: both system and QSE use HKDF to produce a 256-bit key.
+    # So we compare both at 256-bit key strength (quantum search space 2^128).
+    quantum_rate = 1_000_000_000  # 1 billion quantum operations/sec
+    key_bits_for_quantum = 256.0  # AES-256 key; both sources produce 256-bit key via HKDF
+    
+    if use_system_entropy:
+        # Use 256-bit key for fair comparison (same as QSE), not raw entropy bits
+        system_quantum_time = expected_time_for_bits_quantum(key_bits_for_quantum, quantum_rate)
+        weak_quantum_time = None
+    else:
+        weak_quantum_time = expected_time_for_bits_quantum(space_bits, quantum_rate)
+        system_quantum_time = None
+    
+    qrng_quantum_time = expected_time_for_bits_quantum(conditioned_key_bits, quantum_rate)
+    
+    # Verdict: emphasize QSE's quantum/undeterministic superiority, not "broken first"
+    quantum_verdict = None
+    if use_system_entropy:
+        quantum_verdict = {
+            'recommendation': 'qse',
+            'reason': 'QSE Quantum Entropy, using quantum mechanics, provides fundamentally undeterministic entropy. For the highest assurance of unpredictability and true randomness, we recommend QSE.',
+            'system_key_bits': 256,
+            'qrng_key_bits': 256,
+        }
+    else:
+        quantum_verdict = {
+            'recommendation': 'weak_note',
+            'reason': 'Weak entropy is already broken by classical computers. QSE Quantum Entropy, using quantum mechanics, provides fundamentally undeterministic entropy—we recommend QSE for cryptographic applications.',
+        }
+    
+    # Helper function to safely convert infinity to None for JSON serialization
+    def safe_time_value(time_val):
+        """Convert infinity to None for JSON compatibility"""
+        if time_val is None:
+            return None
+        if time_val == float('inf') or (isinstance(time_val, float) and math.isinf(time_val)):
+            return None
+        return time_val
+    
+    # Get the appropriate time value for weak/system entropy
+    weak_or_system_time = system_expected_worst if use_system_entropy else weak_expected_worst
     
     result = {
         'entropy_type': entropy_type,
         'system_packet': {
-            'scheme': 'SYSTEM(os.urandom-4B)' if use_system_entropy else 'WEAK(timestamp-seed)',
+            'scheme': f'SYSTEM(os.urandom-{len(system_seed_bytes)}B)' if use_system_entropy else 'WEAK(timestamp-seed)',
             'nonce_hex': system_nonce.hex(),
             'ciphertext_hex': system_ct.hex(),
             'aad_hex': aad.hex(),
@@ -481,15 +756,33 @@ def entropy_demo():
         'work_factors': {
             'weak': {
                 'search_space_bits': space_bits,
-                'expected_time_sec': weak_expected_worst if not use_system_entropy else system_expected_worst,
-                'expected_time_human': human_time(weak_expected_worst if not use_system_entropy else system_expected_worst),
+                'expected_time_sec': safe_time_value(weak_or_system_time),
+                'expected_time_human': human_time(weak_or_system_time),
             },
             'qrng': {
                 'raw_bits': qrng_raw_bits,
                 'conditioned_bits': conditioned_key_bits,
-                'expected_time_sec': qrng_expected_worst,
+                'expected_time_sec': safe_time_value(qrng_expected_worst),
                 'expected_time_human': human_time(qrng_expected_worst),
             },
+        },
+        'assumptions': {
+            'qrng_bytes_per_request': 256,
+            'qrng_raw_bits_sampled': qrng_raw_bits,
+            'conditioned_key_bits_reported': conditioned_key_bits,
+            'system_entropy_bits': float(actual_bits) if use_system_entropy else None,
+            'note': 'QRNG brute force is not executed; work factor is computed theoretically.' if use_system_entropy else 'QRNG brute force is not executed; work factor is computed from observed weak-case rate.',
+        },
+        'quantum_analysis': {
+            'quantum_rate_ops_per_sec': quantum_rate,
+            'system_quantum_time_sec': safe_time_value(system_quantum_time) if use_system_entropy else None,
+            'system_quantum_time_human': human_time(system_quantum_time) if use_system_entropy else None,
+            'system_key_bits': 256 if use_system_entropy else None,
+            'weak_quantum_time_sec': safe_time_value(weak_quantum_time) if not use_system_entropy else None,
+            'weak_quantum_time_human': human_time(weak_quantum_time) if not use_system_entropy else None,
+            'qrng_quantum_time_sec': safe_time_value(qrng_quantum_time),
+            'qrng_quantum_time_human': human_time(qrng_quantum_time),
+            'verdict': quantum_verdict,
         },
         'progress_updates': progress_updates,
     }
@@ -517,6 +810,8 @@ def rsa_demo():
     
     if bits < 256 or bits % 2 != 0:
         return jsonify({'error': 'bits should be even and >= 256'}), 400
+    if seed_space_bits < 8 or seed_space_bits > 128:
+        return jsonify({'error': 'seed_space_bits should be between 8 and 128'}), 400
     
     # Generate keys
     t0 = time.time()
