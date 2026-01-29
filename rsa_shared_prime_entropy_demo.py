@@ -155,15 +155,16 @@ def fp_u64(x: int) -> str:
 def make_key_weak(idx: int, bits: int, seed_space_bits: int, q_uniqueness: int) -> PublicKeyDemo:
     """
     Weak entropy model:
-      - p seeded ONLY from a tiny seed space (e.g., 12-16 bits) -> p repeats often
-      - q seeded with (same weak seed + idx) so q varies -> different n share prime p
+      - Small seed space (e.g. 12 bits): p seeded from tiny space -> p repeats -> shared primes
+      - Large seed space (e.g. 64+ bits): unique seed per key -> no shared primes
     """
-    mask = (1 << seed_space_bits) - 1
+    if seed_space_bits <= 32:
+        mask = (1 << seed_space_bits) - 1
+        base = int(time.time()) & mask
+    else:
+        # Simulate large entropy: unique base per key so no primes are shared
+        base = ((int(time.time()) << 32) | idx) & ((1 << 64) - 1)
 
-    # "Device seed" (tiny space) – e.g. timestamp seconds truncated
-    base = int(time.time()) & mask
-
-    # p repeats across many keys because it depends only on tiny seed space
     rng_p = XorShift64(seed=base ^ 0xA5A5A5A5A5A5A5A5)
     p = gen_prime(bits // 2, rng_p)
 

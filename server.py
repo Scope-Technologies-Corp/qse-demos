@@ -318,8 +318,15 @@ def fp_u64(x: int) -> str:
 
 
 def make_key_weak(idx: int, bits: int, seed_space_bits: int, q_uniqueness: int) -> Dict[str, Any]:
-    mask = (1 << seed_space_bits) - 1
-    base = int(time.time()) & mask
+    # Small seed space (e.g. 12 bits): same base for all keys in this run -> shared prime p -> vulnerable.
+    # Large seed space (e.g. 64+ bits): unique base per key -> no shared primes -> secure.
+    if seed_space_bits <= 32:
+        mask = (1 << seed_space_bits) - 1
+        base = int(time.time()) & mask
+        # base is same for every key -> same p for all -> many shared factors
+    else:
+        # Simulate large entropy: give each key a unique seed so no primes are shared
+        base = ((int(time.time()) << 32) | idx) & ((1 << 64) - 1)
     rng_p = XorShift64(seed=base ^ 0xA5A5A5A5A5A5A5A5)
     p = gen_prime(bits // 2, rng_p)
     mixed = (base + (idx * q_uniqueness)) & ((1 << 64) - 1)
@@ -517,6 +524,8 @@ def rsa_demo():
     
     if bits < 256 or bits % 2 != 0:
         return jsonify({'error': 'bits should be even and >= 256'}), 400
+    if seed_space_bits < 8 or seed_space_bits > 128:
+        return jsonify({'error': 'seed_space_bits should be between 8 and 128'}), 400
     
     # Generate keys
     t0 = time.time()

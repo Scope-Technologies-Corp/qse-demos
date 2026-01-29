@@ -622,8 +622,24 @@
                 </div>
                 <div class="input-group">
                     <label>
-                        <input type="checkbox" id="use-system-entropy"> Use System Entropy (os.urandom) instead of Weak Timestamp
+                        <input type="checkbox" id="use-system-entropy" onchange="toggleSystemEntropyInput()"> Use System Entropy (os.urandom) instead of Weak Timestamp
                     </label>
+                </div>
+                <div class="input-group" id="system-entropy-bits-group" style="display: none; margin-top: 10px;">
+                    <label for="system-entropy-bits">System Entropy Bits:</label>
+                    <input 
+                        type="number" 
+                        id="system-entropy-bits" 
+                        min="8" 
+                        max="2048" 
+                        step="8" 
+                        value="32" 
+                        style="width: 120px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                        title="Number of bits for os.urandom (default: 32 bits = 4 bytes). QSE uses 2048 bits."
+                    >
+                    <span style="color: #666; margin-left: 10px; font-size: 0.9em;">
+                        (Default: 32 bits. QSE uses 2048 bits)
+                    </span>
                 </div>
             </div>
 
@@ -672,11 +688,11 @@
                     <h3 style="color: #856404;">🔍 Live Attack Visualization</h3>
                     <div style="margin: 15px 0;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <div><strong>What's happening:</strong> The attacker is trying different timestamps (seeds) to find the right one</div>
+                            <div><strong>What's happening:</strong> <span id="attack-description">The attacker is trying different seeds to find the right one</span></div>
                             <div id="attack-current-seed" style="font-family: monospace; color: #7F3D97; font-weight: bold;"></div>
                         </div>
                         <div id="attack-seeds-tried" style="max-height: 150px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.9em;">
-                            <div style="color: #999; margin-bottom: 10px;">Seeds being tried (timestamps):</div>
+                            <div style="color: #999; margin-bottom: 10px;"><span id="attack-seeds-label">Seeds being tried:</span></div>
                             <div id="attack-seeds-list"></div>
                         </div>
                     </div>
@@ -716,7 +732,7 @@
                 </div>
                 <div class="input-group">
                     <label for="seed-space-rsa">Weak Seed Space (bits):</label>
-                    <input type="number" id="seed-space-rsa" value="12" min="8" max="20">
+                    <input type="number" id="seed-space-rsa" value="12" min="8" max="128" title="Small (e.g. 12) = shared primes; large (e.g. 64+) = unique keys">
                 </div>
             </div>
 
@@ -1102,12 +1118,24 @@
             container.innerHTML = html;
         }
 
+        // Toggle system entropy bits input visibility
+        function toggleSystemEntropyInput() {
+            const checkbox = document.getElementById('use-system-entropy');
+            const bitsGroup = document.getElementById('system-entropy-bits-group');
+            if (checkbox.checked) {
+                bitsGroup.style.display = 'block';
+            } else {
+                bitsGroup.style.display = 'none';
+            }
+        }
+
         // Entropy Demo
         async function runEntropyDemo() {
             const qrngB64 = document.getElementById('qrng-b64-entropy').value.trim();
             const message = document.getElementById('message-entropy').value;
             const window = parseInt(document.getElementById('window-entropy').value);
             const useSystem = document.getElementById('use-system-entropy').checked;
+            const systemEntropyBits = useSystem ? parseInt(document.getElementById('system-entropy-bits').value) || 32 : 32;
 
             if (!qrngB64) {
                 alert('Please provide QRNG base64 data');
@@ -1158,8 +1186,10 @@
                     weakEntropyDisplay.title = `Unix timestamp: ${timestamp}`;
                     weakEntropyDisplay.parentElement.querySelector('div[style*="color: #666"]').textContent = 'Current date and time used as seed';
                 } else {
-                    weakEntropyDisplay.textContent = 'System entropy (os.urandom)';
-                    weakEntropyDisplay.parentElement.querySelector('div[style*="color: #666"]').textContent = '4 random bytes from operating system';
+                    const bits = parseInt(document.getElementById('system-entropy-bits').value) || 32;
+                    const bytes = Math.ceil(bits / 8);
+                    weakEntropyDisplay.textContent = `System entropy (os.urandom) - ${bits} bits`;
+                    weakEntropyDisplay.parentElement.querySelector('div[style*="color: #666"]').textContent = `${bytes} random bytes (${bits} bits) from operating system`;
                 }
                 
                 // Show QRNG data preview
@@ -1174,7 +1204,8 @@
                 entropyPreview.style.display = 'block';
                 
                 addStatusLog('entropy-status', 'Starting entropy effectiveness demo...', 'info');
-                addStatusLog('entropy-status', `Entropy type: ${useSystem ? 'System (os.urandom)' : 'Weak (timestamp)'}`, 'info');
+                const bits = useSystem ? (parseInt(document.getElementById('system-entropy-bits').value) || 32) : 0;
+                addStatusLog('entropy-status', `Entropy type: ${useSystem ? `System (os.urandom, ${bits} bits)` : 'Weak (timestamp)'}`, 'info');
                 addStatusLog('entropy-status', `Message: "${message}"`, 'info');
                 addStatusLog('entropy-status', `Brute-force window: ±${window} seconds`, 'info');
 
@@ -1202,7 +1233,8 @@
                             qrng_b64: qrngB64,
                             message: message,
                             window: window,
-                            use_system_entropy: useSystem
+                            use_system_entropy: useSystem,
+                            system_entropy_bits: systemEntropyBits
                         })
                     });
                 } catch (networkError) {
@@ -1263,8 +1295,19 @@
                     const attackViz = document.getElementById('entropy-attack-visualization');
                     const seedsList = document.getElementById('attack-seeds-list');
                     const currentSeedDisplay = document.getElementById('attack-current-seed');
+                    const attackDescription = document.getElementById('attack-description');
+                    const attackSeedsLabel = document.getElementById('attack-seeds-label');
                     let progressBar = document.getElementById('entropy-progress-bar');
                     let progressText = document.getElementById('entropy-progress-text');
+                    
+                    // Update visualization text based on entropy type
+                    if (useSystem) {
+                        attackDescription.textContent = 'The attacker is trying different random seed values to find the right one';
+                        attackSeedsLabel.textContent = 'Seeds being tried (random bytes):';
+                    } else {
+                        attackDescription.textContent = 'The attacker is trying different timestamps (seeds) to find the right one';
+                        attackSeedsLabel.textContent = 'Seeds being tried (timestamps):';
+                    }
                     
                     attackViz.style.display = 'block';
                     
@@ -1288,7 +1331,17 @@
                         progressBar.textContent = progressPercent.toFixed(1) + '%';
                         
                         if (lastUpdate.current_seed) {
-                            currentSeedDisplay.textContent = `Currently trying: ${lastUpdate.current_seed.timestamp}`;
+                            if (useSystem) {
+                                // For system entropy, show seed value or hex if available
+                                if (lastUpdate.current_seed.seed_value !== undefined) {
+                                    currentSeedDisplay.textContent = `Currently trying: 0x${lastUpdate.current_seed.seed_value.toString(16).padStart(Math.ceil((parseInt(document.getElementById('system-entropy-bits').value) || 32) / 8) * 2, '0')}`;
+                                } else {
+                                    currentSeedDisplay.textContent = `Currently trying: seed #${lastUpdate.guesses}`;
+                                }
+                            } else {
+                                // For weak entropy, show timestamp
+                                currentSeedDisplay.textContent = `Currently trying: ${lastUpdate.current_seed.timestamp}`;
+                            }
                         }
                         
                         progressText.textContent = 
@@ -1301,8 +1354,17 @@
                         progressBar.textContent = '100%';
                         if (data.attack_result.success) {
                             progressText.textContent = `✓ Attack completed successfully! Found seed in ${data.attack_result.guesses.toLocaleString()} guesses (${data.attack_result.elapsed_sec.toFixed(4)}s)`;
-                            if (data.attack_result.recovered_seed_timestamp) {
+                            if (useSystem && data.attack_result.recovered_seed_bytes) {
+                                // System entropy: show hex seed
+                                currentSeedDisplay.textContent = `✓ Found! Seed: ${data.attack_result.recovered_seed_bytes}`;
+                                currentSeedDisplay.style.color = '#27ae60';
+                            } else if (!useSystem && data.attack_result.recovered_seed_timestamp) {
+                                // Weak entropy: show timestamp
                                 currentSeedDisplay.textContent = `✓ Found! Seed: ${data.attack_result.recovered_seed_timestamp}`;
+                                currentSeedDisplay.style.color = '#27ae60';
+                            } else if (data.attack_result.recovered_seed !== null && data.attack_result.recovered_seed !== undefined) {
+                                // Fallback: show raw seed value
+                                currentSeedDisplay.textContent = `✓ Found! Seed: ${data.attack_result.recovered_seed}`;
                                 currentSeedDisplay.style.color = '#27ae60';
                             }
                         } else {
@@ -1311,12 +1373,20 @@
                     }, 100);
                 }
 
-                if (!useSystem && data.attack_result.success) {
-                    addStatusLog('entropy-status', `✓ Attack successful! Seed recovered: ${data.attack_result.recovered_seed}`, 'success');
-                    addStatusLog('entropy-status', `Recovered plaintext: "${data.attack_result.recovered_plaintext.split('|')[1] || data.attack_result.recovered_plaintext}"`, 'success');
+                if (data.attack_result.success) {
+                    if (useSystem && data.attack_result.recovered_seed_bytes) {
+                        addStatusLog('entropy-status', `✓ Attack successful! Seed recovered: ${data.attack_result.recovered_seed_bytes}`, 'success');
+                    } else if (!useSystem) {
+                        addStatusLog('entropy-status', `✓ Attack successful! Seed recovered: ${data.attack_result.recovered_seed}`, 'success');
+                    }
+                    if (data.attack_result.recovered_plaintext) {
+                        addStatusLog('entropy-status', `Recovered plaintext: "${data.attack_result.recovered_plaintext.split('|')[1] || data.attack_result.recovered_plaintext}"`, 'success');
+                    }
                     addStatusLog('entropy-status', `Total guesses: ${data.attack_result.guesses.toLocaleString()} in ${data.attack_result.elapsed_sec.toFixed(4)}s`, 'success');
                 } else if (!useSystem) {
                     addStatusLog('entropy-status', '✗ Attack failed within the specified window', 'error');
+                } else if (useSystem && data.attack_result.guesses > 0) {
+                    addStatusLog('entropy-status', `✗ Brute-force attempted: ${data.attack_result.guesses.toLocaleString()} guesses in ${data.attack_result.elapsed_sec.toFixed(4)}s - Seed not recovered`, 'error');
                 }
 
                 updateStepIndicator('entropy-steps', steps, steps.length - 1);
@@ -1350,6 +1420,25 @@
             }
         }
 
+        // Helper function to format large numbers in human-readable format
+        function formatLargeNumber(num) {
+            if (num >= 1e18) {
+                return (num / 1e18).toFixed(2) + ' Quintillion';
+            } else if (num >= 1e15) {
+                return (num / 1e15).toFixed(2) + ' Quadrillion';
+            } else if (num >= 1e12) {
+                return (num / 1e12).toFixed(2) + ' Trillion';
+            } else if (num >= 1e9) {
+                return (num / 1e9).toFixed(2) + ' Billion';
+            } else if (num >= 1e6) {
+                return (num / 1e6).toFixed(2) + ' Million';
+            } else if (num >= 1e3) {
+                return (num / 1e3).toFixed(2) + ' Thousand';
+            } else {
+                return num.toLocaleString();
+            }
+        }
+
         function displayEntropyResults(data) {
             const results = document.getElementById('entropy-results');
             const attack = data.attack_result;
@@ -1373,7 +1462,8 @@
                 html += `<div class="result-item"><strong>How Many Guesses:</strong> ${attack.guesses.toLocaleString()} timestamps tried</div>`;
                 html += `<div class="result-item"><strong>Time to Break:</strong> ${attack.elapsed_sec.toFixed(4)} seconds (less than a blink of an eye!)</div>`;
                 html += `<div class="result-item"><strong>Guessing Speed:</strong> ${attack.guesses_per_sec.toLocaleString()} guesses per second</div>`;
-                html += `<div class="result-item"><strong>Search Space (How Many Possibilities):</strong> ${attack.search_space_size.toLocaleString()} timestamps (only ${attack.search_space_bits.toFixed(2)} bits of security)</div>`;
+                const formattedSearchSpace = formatLargeNumber(attack.search_space_size);
+                html += `<div class="result-item"><strong>Search Space (How Many Possibilities):</strong> ${formattedSearchSpace} timestamps (only ${attack.search_space_bits.toFixed(2)} bits of security)</div>`;
                 
                 if (attack.start_timestamp && attack.end_timestamp) {
                     html += `<div class="result-item" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px;">`;
@@ -1382,8 +1472,37 @@
                     html += `</div>`;
                 }
             } else {
+                const bits = parseInt(document.getElementById('system-entropy-bits').value) || 32;
                 html += `<div class="result-item"><strong>Entropy Type:</strong> System Entropy (os.urandom)</div>`;
-                html += `<div class="result-item"><strong>Seed Space:</strong> 2^${attack.search_space_bits.toFixed(0)} = ${attack.search_space_size.toLocaleString()} possibilities</div>`;
+                html += `<div class="result-item"><strong>Entropy Bits:</strong> ${bits} bits (${Math.ceil(bits / 8)} bytes)</div>`;
+                
+                // Show attack results if brute-force was performed and succeeded
+                if (attack.success) {
+                    html += `<div class="result-item"><strong>Attack Status:</strong> <span class="stat-badge success">✅ SUCCESS - Encryption Broken!</span></div>`;
+                    html += `<div class="result-item" style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 10px 0;">`;
+                    html += `<strong style="color: #155724;">✅ What the Attacker Found:</strong><br>`;
+                    html += `<div style="margin-top: 10px;"><strong>Recovered Seed (hex):</strong> <span style="font-family: monospace; background: white; padding: 5px; border-radius: 4px;">${attack.recovered_seed_bytes || attack.recovered_seed || 'N/A'}</span></div>`;
+                    if (attack.recovered_plaintext) {
+                        const msgOnly = attack.recovered_plaintext.split('|')[1] || attack.recovered_plaintext;
+                        html += `<div style="margin-top: 10px;"><strong>Recovered Secret Message:</strong> <span style="font-family: monospace; background: white; padding: 5px; border-radius: 4px;">${msgOnly}</span></div>`;
+                    }
+                    html += `<div style="margin-top: 10px; color: #155724; font-weight: bold;">The attacker successfully broke the encryption by brute-forcing the seed!</div>`;
+                    html += `</div>`;
+                    html += `<div class="result-item"><strong>How Many Guesses:</strong> ${attack.guesses.toLocaleString()} seeds tried</div>`;
+                    html += `<div class="result-item"><strong>Time to Break:</strong> ${attack.elapsed_sec.toFixed(4)} seconds</div>`;
+                    html += `<div class="result-item"><strong>Guessing Speed:</strong> ${attack.guesses_per_sec.toLocaleString()} guesses per second</div>`;
+                } else if (attack.guesses > 0) {
+                    // Brute-force was attempted but failed (shouldn't happen for small bits, but handle it)
+                    html += `<div class="result-item"><strong>Attack Status:</strong> <span class="stat-badge danger">❌ FAILED</span></div>`;
+                    html += `<div class="result-item" style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0;">`;
+                    html += `<strong style="color: #856404;">⚠️ Brute-force attempted but seed not recovered</strong><br>`;
+                    html += `<div style="margin-top: 10px;"><strong>Guesses Tried:</strong> ${attack.guesses.toLocaleString()}</div>`;
+                    html += `<div style="margin-top: 10px;"><strong>Time Elapsed:</strong> ${attack.elapsed_sec.toFixed(4)} seconds</div>`;
+                    html += `</div>`;
+                }
+                
+                const formattedSeedSpace = formatLargeNumber(attack.search_space_size);
+                html += `<div class="result-item"><strong>Seed Space:</strong> 2^${attack.search_space_bits.toFixed(0)} = ${formattedSeedSpace} possibilities</div>`;
                 html += `<div class="result-item"><strong>Security Level:</strong> ${attack.search_space_bits.toFixed(0)} bits</div>`;
             }
             html += '</div>';
@@ -1400,8 +1519,25 @@
                 html += `<div style="font-size: 0.85em; color: #999; margin-top: 5px; text-align: center;">Unix timestamp: ${data.system_packet.seed_hint}</div>`;
                 html += `</div>`;
             }
-            html += `<div class="result-item"><strong>Search Space (Possibilities):</strong> ${workFactors.weak.search_space_bits.toFixed(2)} bits = ${Math.pow(2, workFactors.weak.search_space_bits).toLocaleString()} possibilities</div>`;
-            html += `<div class="result-item"><strong>Time to Break:</strong> <span style="color: #e74c3c; font-weight: bold;">${workFactors.weak.expected_time_human}</span></div>`;
+            // Handle very large numbers for display
+            let searchSpaceDisplay;
+            if (workFactors.weak.search_space_bits > 1000) {
+                // For very large bit values, show in scientific notation
+                searchSpaceDisplay = `2^${workFactors.weak.search_space_bits.toFixed(0)} (${workFactors.weak.search_space_bits.toFixed(0)} bits)`;
+            } else {
+                const possibilities = Math.pow(2, workFactors.weak.search_space_bits);
+                const formattedPossibilities = formatLargeNumber(possibilities);
+                searchSpaceDisplay = `${workFactors.weak.search_space_bits.toFixed(2)} bits = ${formattedPossibilities} possibilities`;
+            }
+            html += `<div class="result-item"><strong>Search Space (Possibilities):</strong> ${searchSpaceDisplay}</div>`;
+            // When attack succeeded, show actual time in results; here show worst-case for comparison
+            const showActualAndMax = (data.entropy_type === 'system' && attack.success);
+            if (showActualAndMax) {
+                html += `<div class="result-item"><strong>Actual time to break:</strong> <span style="color: #27ae60; font-weight: bold;">${attack.elapsed_sec.toFixed(2)}s</span> (seed found)</div>`;
+                html += `<div class="result-item"><strong>Worst-case time (max):</strong> <span style="color: #e74c3c; font-weight: bold;">${workFactors.weak.expected_time_human}</span> <span style="font-size: 0.85em; color: #666;">(if seed was last in search space)</span></div>`;
+            } else {
+                html += `<div class="result-item"><strong>Time to Break (worst-case):</strong> <span style="color: #e74c3c; font-weight: bold;">${workFactors.weak.expected_time_human}</span> <span style="font-size: 0.85em; color: #666;">(max time to try all possibilities)</span></div>`;
+            }
             html += '</div>';
 
             // QRNG case
@@ -1415,19 +1551,90 @@
             html += `<div class="result-item"><strong>Raw Bits:</strong> ${workFactors.qrng.raw_bits} bits</div>`;
             html += `<div class="result-item"><strong>Conditioned Key:</strong> ${workFactors.qrng.conditioned_bits.toFixed(0)} bits</div>`;
             html += `<div class="result-item"><strong>Time to Break:</strong> <span style="color: #27ae60; font-weight: bold;">${workFactors.qrng.expected_time_human}</span></div>`;
-            html += `<div class="result-item" style="color: #27ae60; font-weight: bold; margin-top: 10px;">✅ SECURE - Impossible to break!</div>`;
+            
+            // Show comparison note if both use same bit length
+            if (data.entropy_type === 'system' && data.assumptions && data.assumptions.system_entropy_bits) {
+                const systemBits = data.assumptions.system_entropy_bits;
+                const qrngRawBits = workFactors.qrng.raw_bits;
+                if (systemBits >= 256) {
+                    html += `<div class="result-item" style="color: #27ae60; font-weight: bold; margin-top: 10px;">✅ SECURE - Both use ${systemBits >= 2048 ? '2048' : systemBits} bits of entropy, resulting in equivalent security!</div>`;
+                } else {
+                    html += `<div class="result-item" style="color: #27ae60; font-weight: bold; margin-top: 10px;">✅ SECURE - Impossible to break!</div>`;
+                }
+            } else {
+                html += `<div class="result-item" style="color: #27ae60; font-weight: bold; margin-top: 10px;">✅ SECURE - Impossible to break!</div>`;
+            }
             html += '</div>';
 
             html += '</div>';
             
             // Add educational comparison
+            // Quantum Computing Analysis Section
+            if (data.quantum_analysis && data.quantum_analysis.verdict) {
+                html += '<div class="result-card" style="background: #fff3e0; border-left: 4px solid #ff9800; margin-top: 20px;">';
+                html += '<h3 style="color: #e65100;">⚛️ Quantum Computing Analysis</h3>';
+                html += '<div style="line-height: 1.8; color: #555; margin-bottom: 20px;">';
+                html += '<p style="margin-bottom: 15px;"><strong>If quantum computers were commercialized today, here\'s the projected impact:</strong></p>';
+                
+                html += '<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">';
+                html += '<h4 style="color: #e65100; margin-bottom: 10px;">🔬 Quantum Attack Projections</h4>';
+                html += '<p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">Using Grover\'s algorithm, quantum computers reduce search space from 2^n to 2^(n/2) - a quadratic speedup.</p>';
+                
+                if (data.entropy_type === 'system' && data.quantum_analysis.system_quantum_time_human) {
+                    html += `<div style="margin: 10px 0; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #ff9800;">`;
+                    html += `<strong>System Entropy (256-bit key):</strong> `;
+                    html += `<span style="color: #e65100; font-weight: bold;">${data.quantum_analysis.system_quantum_time_human}</span>`;
+                    html += ` <span style="font-size: 0.85em; color: #666;">(quantum search space: 2^128)</span>`;
+                    html += `</div>`;
+                } else if (data.entropy_type === 'weak' && data.quantum_analysis.weak_quantum_time_human) {
+                    html += `<div style="margin: 10px 0; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #ff9800;">`;
+                    html += `<strong>Weak Entropy:</strong> `;
+                    html += `<span style="color: #e65100; font-weight: bold;">${data.quantum_analysis.weak_quantum_time_human}</span>`;
+                    html += ` <span style="font-size: 0.85em; color: #666;">(already broken by classical computers)</span>`;
+                    html += `</div>`;
+                }
+                
+                html += `<div style="margin: 10px 0; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #4caf50;">`;
+                html += `<strong>QSE Entropy (256-bit key):</strong> `;
+                html += `<span style="color: #2e7d32; font-weight: bold;">${data.quantum_analysis.qrng_quantum_time_human}</span>`;
+                html += ` <span style="font-size: 0.85em; color: #666;">(quantum search space: 2^128)</span>`;
+                html += `</div>`;
+                
+                html += '</div>';
+                
+                // Verdict
+                html += '<div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 15px; border: 2px solid #2196F3;">';
+                html += '<h4 style="color: #1976D2; margin-bottom: 10px;">🎯 Recommendation</h4>';
+                const verdict = data.quantum_analysis.verdict;
+                if (verdict.recommendation === 'qse') {
+                    html += `<p style="color: #2e7d32; font-weight: bold; margin-bottom: 10px;">✅ QSE Quantum Entropy — recommended for highest assurance</p>`;
+                } else if (verdict.recommendation === 'weak_note') {
+                    html += `<p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ Weak entropy is already broken</p>`;
+                }
+                html += `<p style="color: #555; line-height: 1.6;">${verdict.reason || 'QSE Quantum Entropy, using quantum mechanics, provides fundamentally undeterministic entropy. For the highest assurance of unpredictability, we recommend QSE.'}</p>`;
+                html += '<p style="margin-top: 15px; font-size: 0.9em; color: #666; font-style: italic;">Note: Fair comparison uses 256-bit key for both (HKDF output). Projections assume a hypothetical quantum computer with 1 billion operations/second. Current quantum computers are orders of magnitude slower, and practical quantum attacks on AES-256 are not expected for decades.</p>';
+                html += '</div>';
+                
+                html += '</div>';
+                html += '</div>';
+            }
+            
             html += '<div class="result-card" style="background: #e3f2fd; border-left-color: #2196F3; margin-top: 20px;">';
             html += '<h3 style="color: #1976D2;">💡 Key Takeaway</h3>';
             html += '<div style="line-height: 1.8; color: #555;">';
             html += '<p><strong>The same encryption (AES-256) was used in both cases.</strong> The difference is the entropy source:</p>';
             html += '<ul style="margin-left: 20px; margin-top: 10px;">';
-            html += '<li><strong>Weak Entropy (Timestamp):</strong> Predictable → Easy to guess → Encryption broken in seconds</li>';
-            html += '<li><strong>QRNG Entropy:</strong> Unpredictable → Impossible to guess → Encryption remains secure</li>';
+            if (data.entropy_type === 'weak') {
+                html += '<li><strong>Weak Entropy (Timestamp):</strong> Predictable → Easy to guess → Encryption broken in seconds</li>';
+                html += '<li><strong>QRNG Entropy:</strong> Unpredictable → Impossible to guess → Encryption remains secure</li>';
+            } else {
+                const systemBits = data.assumptions && data.assumptions.system_entropy_bits ? data.assumptions.system_entropy_bits : 32;
+                html += `<li><strong>System Entropy (os.urandom, ${systemBits} bits):</strong> Cryptographically secure random bytes → ${systemBits >= 256 ? 'Practically impossible' : 'Very difficult'} to guess → Encryption remains secure</li>`;
+                html += '<li><strong>QRNG Entropy (2048 raw bits → 256-bit key):</strong> Quantum random bytes → Practically impossible to guess → Encryption remains secure</li>';
+                if (systemBits >= 256) {
+                    html += '<li style="margin-top: 10px; font-weight: bold; color: #1976D2;"><strong>Both provide equivalent security when using sufficient entropy!</strong></li>';
+                }
+            }
             html += '</ul>';
             html += '<p style="margin-top: 15px; font-weight: bold; color: #1976D2;">This proves: <strong>No encryption can protect you if your entropy source is weak!</strong></p>';
             html += '</div>';
@@ -1544,8 +1751,11 @@
             const results = document.getElementById('rsa-results');
             const weak = data.weak_keys;
             const qrng = data.qrng_keys;
+            const params = data.parameters || {};
+            const seedSpaceBits = params.seed_space_bits != null ? params.seed_space_bits : 12;
 
-            let html = '<div class="comparison-grid">';
+            let html = '<div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; color: #333;"><strong>Parameters used:</strong> ' + weak.count + ' keys, ' + (params.bits || 512) + '-bit modulus, <strong>' + seedSpaceBits + '-bit weak seed space</strong></div>';
+            html += '<div class="comparison-grid">';
             
             // Weak keys
             html += '<div class="comparison-card weak">';
@@ -1567,6 +1777,9 @@
                 weak.top_p_fingerprints.forEach(p => {
                     html += `<div class="result-item">${p.fp}: repeated ${p.count} times</div>`;
                 });
+            }
+            if (seedSpaceBits > 32 && weak.vulnerable_count === 0) {
+                html += '<div class="alert alert-success" style="margin-top: 15px;">With large seed space (64+ bits), each key gets unique entropy → no shared primes.</div>';
             }
             
             html += '</div>';
