@@ -1,0 +1,36 @@
+name: build and push (staging)
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+          TAG: sha-${{ github.sha }}
+        run: |
+          docker build -t "$ECR_REPO:$TAG" .
+          docker push "$ECR_REPO:$TAG"
+          echo "Pushed $ECR_REPO:$TAG"
