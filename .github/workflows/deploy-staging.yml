@@ -34,3 +34,24 @@ jobs:
           docker build -t "$ECR_REPO:$TAG" .
           docker push "$ECR_REPO:$TAG"
           echo "Pushed $ECR_REPO:$TAG"
+
+      - name: Deploy to EC2 via SSM
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+          TAG: sha-${{ github.sha }}
+        run: |
+          aws ssm send-command \
+            --region "$AWS_REGION" \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceids,Values=$INSTANCE_ID" \
+            --comment "Deploy qse-demos $TAG" \
+            --parameters commands="[
+              \"set -e\",
+              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO\",
+              \"docker pull $ECR_REPO:$TAG\",
+              \"docker rm -f qse-demos || true\",
+              \"docker run -d --restart unless-stopped --name qse-demos -p 80:5001 $ECR_REPO:$TAG\",
+              \"docker ps --filter name=qse-demos\"
+            ]"
