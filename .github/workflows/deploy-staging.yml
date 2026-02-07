@@ -52,6 +52,6 @@ jobs:
               \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO\",
               \"docker pull $ECR_REPO:$TAG\",
               \"docker rm -f qse-demos || true\",
-              \"docker run -d --restart unless-stopped --name qse-demos -p 80:5001 $ECR_REPO:$TAG\",
+              \"docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 $ECR_REPO:$TAG\",
               \"docker ps --filter name=qse-demos\"
             ]"

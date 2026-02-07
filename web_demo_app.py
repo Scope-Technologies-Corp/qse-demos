@@ -1675,23 +1675,10 @@ def dieharder_past_report_html(filename):
 
 
 if __name__ == '__main__':
-    import socket
-    
-    # Try to find an available port (start with 5001 to avoid macOS AirPlay conflict)
-    def find_free_port(start_port=5001):
-        for port in range(start_port, start_port + 10):
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(('', port))
-                    return port
-            except OSError:
-                continue
-        return 5001  # Fallback
-    
-    port = find_free_port(5001)
-    print(f"\n🚀 Starting QRNG Entropy Demos Web Application...")
-    print(f"📡 Server running at: http://localhost:{port}")
-    print(f"🌐 For remote access: http://0.0.0.0:{port}")
-    print(f"\nPress Ctrl+C to stop the server\n")
-    
-    app.run(debug=True, host='0.0.0.0', port=port)
+    import os
+
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", "5001"))
+    debug = os.getenv("DEBUG", "0") == "1"
+
+    app.run(host=host, port=port, debug=debug, use_reloader=False)
