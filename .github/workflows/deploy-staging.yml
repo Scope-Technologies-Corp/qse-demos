@@ -35,23 +35,54 @@ jobs:
           docker push "$ECR_REPO:$TAG"
           echo "Pushed $ECR_REPO:$TAG"
 
-      - name: Deploy to EC2 via SSM
+      - name: Deploy to EC2 via SSM (and verify)
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
           ECR_REPO: ${{ secrets.ECR_REPO }}
           TAG: sha-${{ github.sha }}
         run: |
-          aws ssm send-command \
+          set -euo pipefail
+
+          REGISTRY="$(echo "$ECR_REPO" | cut -d'/' -f1)"
+          echo "Registry: $REGISTRY"
+          echo "Image: $ECR_REPO:$TAG"
+
+          COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
             --document-name "AWS-RunShellScript" \
             --targets "Key=instanceids,Values=$INSTANCE_ID" \
             --comment "Deploy qse-demos $TAG" \
             --parameters commands="[
-              \"set -e\",
-              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO\",
+              \"set -euo pipefail\",
+              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY\",
               \"docker pull $ECR_REPO:$TAG\",
               \"docker rm -f qse-demos || true\",
               \"docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 $ECR_REPO:$TAG\",
-              \"docker ps --filter name=qse-demos\"
-            ]"
+              \"curl -fsS http://localhost/ >/dev/null\",
+              \"docker inspect qse-demos --format=\\\"{{.Config.Image}}\\\"\"\n            ]" \
+            --query "Command.CommandId" --output text)
+
+          echo "SSM CommandId: $COMMAND_ID"
+
+          # Wait and verify result
+          aws ssm wait command-executed --region "$AWS_REGION" \
+            --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
+
+          STATUS=$(aws ssm get-command-invocation --region "$AWS_REGION" \
+            --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
+            --query "Status" --output text)
+
+          echo "SSM Status: $STATUS"
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "---- STDOUT ----"
+            aws ssm get-command-invocation --region "$AWS_REGION" \
+              --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
+              --query "StandardOutputContent" --output text || true
+            echo "---- STDERR ----"
+            aws ssm get-command-invocation --region "$AWS_REGION" \
+              --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
+              --query "StandardErrorContent" --output text || true
+            exit 1
+          fi
