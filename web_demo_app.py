@@ -1673,12 +1673,8 @@ def dieharder_past_report_html(filename):
     
     return content, 200, {'Content-Type': 'text/html'}
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     import os
-
-    host = "0.0.0.0"
     port = int(os.getenv("PORT", "5001"))
     debug = os.getenv("DEBUG", "0") == "1"
-
-    app.run(host=host, port=port, debug=debug, use_reloader=False)
+    app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=False)
