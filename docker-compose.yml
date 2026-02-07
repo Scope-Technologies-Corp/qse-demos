@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: qse-demos
     ports:
-      - "5001:5001"
+      - "8080:5001"
     environment:
       - PYTHONUNBUFFERED=1
       # Add your QSE endpoint here if needed
