@@ -56,7 +56,7 @@ jobs:
           aws ssm send-command \
             --region "$AWS_REGION" \
             --document-name "AWS-RunShellScript" \
-            --targets "Key=instanceids,Values=$INSTANCE_ID" \
+            --targets "Key=InstanceIds,Values=$INSTANCE_ID" \
             --comment "Deploy qse-demos $TAG" \
             --parameters "commands=$(cat <<EOF
 
