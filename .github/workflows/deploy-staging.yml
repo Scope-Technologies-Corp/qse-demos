@@ -47,12 +47,6 @@ jobs:
           REGISTRY="$(echo "$ECR_REPO" | cut -d'/' -f1)"
           IMAGE="$ECR_REPO:$TAG"
 
-          echo "INSTANCE_ID=$INSTANCE_ID"
-          echo "AWS_REGION=$AWS_REGION"
-          echo "REGISTRY=$REGISTRY"
-          echo "IMAGE=$IMAGE"
-          echo "TAG=$TAG"
-
           aws ssm send-command \
           --region "$AWS_REGION" \
           --document-name "AWS-RunShellScript" \
