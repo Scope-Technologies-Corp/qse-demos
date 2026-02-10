@@ -36,7 +36,7 @@ jobs:
           docker push "$ECR_REPO:$TAG"
           echo "Pushed $ECR_REPO:$TAG"
 
-      - name: Deploy to EC2 via SSM (wait + verify)
+      - name: Deploy to EC2 via SSM (wait + logs + retry healthcheck)
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
@@ -61,7 +61,7 @@ jobs:
               \"docker pull $IMAGE\",
               \"docker rm -f qse-demos || true\",
               \"docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 $IMAGE\",
-              \"curl -fsS http://localhost/ >/dev/null\",
+              \"for i in 1 2 3 4 5 6 7 8 9 10; do curl -fsS http://localhost/ >/dev/null && exit 0; sleep 3; done; echo HEALTHCHECK_FAILED; exit 1\",
               \"docker inspect qse-demos --format \\\"{{.Config.Image}}\\\"\",
               \"docker ps --filter name=qse-demos\"
             ]" \
@@ -69,32 +69,25 @@ jobs:
 
           echo "SSM CommandId: $COMMAND_ID"
 
-          aws ssm wait command-executed \
+          # Wait; if it fails, print full SSM output + exit 1
+          if ! aws ssm wait command-executed \
             --region "$AWS_REGION" \
             --command-id "$COMMAND_ID" \
             --instance-id "$INSTANCE_ID"
+          then
+            aws ssm get-command-invocation \
+              --region "$AWS_REGION" \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query '{Status:Status,ResponseCode:ResponseCode,StdOut:StandardOutputContent,StdErr:StandardErrorContent}' \
+              --output json
+            exit 1
+          fi
 
-          STATUS=$(aws ssm get-command-invocation \
+          # Always print output (useful even on success)
+          aws ssm get-command-invocation \
             --region "$AWS_REGION" \
             --command-id "$COMMAND_ID" \
             --instance-id "$INSTANCE_ID" \
-            --query "Status" --output text)
-
-          echo "SSM Status: $STATUS"
-
-          if [ "$STATUS" != "Success" ]; then
-            echo "---- STDOUT ----"
-            aws ssm get-command-invocation \
-              --region "$AWS_REGION" \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" \
-              --query "StandardOutputContent" --output text || true
-
-            echo "---- STDERR ----"
-            aws ssm get-command-invocation \
-              --region "$AWS_REGION" \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" \
-              --query "StandardErrorContent" --output text || true
-            exit 1
-          fi
+            --query '{Status:Status,ResponseCode:ResponseCode,StdOut:StandardOutputContent,StdErr:StandardErrorContent}' \
+            --output json
