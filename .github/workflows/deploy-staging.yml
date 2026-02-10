@@ -45,27 +45,46 @@ jobs:
           set -euo pipefail
 
           REGISTRY="$(echo "$ECR_REPO" | cut -d'/' -f1)"
+          IMAGE="$ECR_REPO:$TAG"
+
           echo "Registry: $REGISTRY"
-          echo "Image: $ECR_REPO:$TAG"
+          echo "Image: $IMAGE"
+
+          # Create a remote script (no JSON escaping pain)
+          cat > /tmp/ssm_deploy.sh <<'EOF'
+          set -euo pipefail
+          echo "Logging into ECR..."
+          aws ecr get-login-password --region __AWS_REGION__ | docker login --username AWS --password-stdin __REGISTRY__
+          echo "Pulling image..."
+          docker pull __IMAGE__
+          echo "Replacing container..."
+          docker rm -f qse-demos || true
+          docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 __IMAGE__
+          echo "Health check..."
+          curl -fsS http://localhost/ >/dev/null
+          echo "Running image:"
+          docker inspect qse-demos --format '{{.Config.Image}}'
+          EOF
+
+          # Substitute variables into the script
+          sed -i "s|__AWS_REGION__|$AWS_REGION|g" /tmp/ssm_deploy.sh
+          sed -i "s|__REGISTRY__|$REGISTRY|g" /tmp/ssm_deploy.sh
+          sed -i "s|__IMAGE__|$IMAGE|g" /tmp/ssm_deploy.sh
+
+          # Encode script as base64 so SSM --parameters JSON has no quoting/newline issues
+          SCRIPT_B64=$(base64 -w0 < /tmp/ssm_deploy.sh)
+          jq -n --arg b64 "$SCRIPT_B64" '{commands: ["echo " + $b64 + " | base64 -d | bash"]}' > /tmp/ssm_params.json
 
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
             --document-name "AWS-RunShellScript" \
             --targets "Key=instanceids,Values=$INSTANCE_ID" \
             --comment "Deploy qse-demos $TAG" \
-            --parameters commands="[
-              \"set -euo pipefail\",
-              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY\",
-              \"docker pull $ECR_REPO:$TAG\",
-              \"docker rm -f qse-demos || true\",
-              \"docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 $ECR_REPO:$TAG\",
-              \"curl -fsS http://localhost/ >/dev/null\",
-              \"docker inspect qse-demos --format=\\\"{{.Config.Image}}\\\"\"\n            ]" \
+            --parameters file:///tmp/ssm_params.json \
             --query "Command.CommandId" --output text)
 
           echo "SSM CommandId: $COMMAND_ID"
 
-          # Wait and verify result
           aws ssm wait command-executed --region "$AWS_REGION" \
             --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
 
