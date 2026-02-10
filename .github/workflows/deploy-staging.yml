@@ -54,12 +54,11 @@ jobs:
           echo "TAG=$TAG"
 
           aws ssm send-command \
-            --region "$AWS_REGION" \
-            --document-name "AWS-RunShellScript" \
-            --targets "Key=InstanceIds,Values=$INSTANCE_ID" \
-            --comment "Deploy qse-demos $TAG" \
-            --parameters "commands=$(cat <<EOF
-
+          --region "$AWS_REGION" \
+          --document-name "AWS-RunShellScript" \
+          --instance-ids "$INSTANCE_ID" \
+          --comment "Deploy qse-demos $TAG" \
+          --parameters "commands=$(cat <<EOF
           set -e
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY
           docker pull $IMAGE
