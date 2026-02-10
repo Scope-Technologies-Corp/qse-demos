@@ -61,7 +61,7 @@ jobs:
               \"docker pull $IMAGE\",
               \"docker rm -f qse-demos || true\",
               \"docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 $IMAGE\",
-              \"for i in 1 2 3 4 5 6 7 8 9 10; do curl -fsS http://localhost/ >/dev/null 2>&1 && exit 0; sleep 3; done; echo HEALTHCHECK_FAILED; curl -v http://localhost/ || true; exit 1",
+              \"for i in 1 2 3 4 5 6 7 8 9 10; do curl -fsS http://localhost/ >/dev/null 2>&1 && exit 0; sleep 3; done; echo HEALTHCHECK_FAILED; curl -v http://localhost/ || true; exit 1\",
               \"docker inspect qse-demos --format \\\"{{.Config.Image}}\\\"\",
               \"docker ps --filter name=qse-demos\"
             ]" \
