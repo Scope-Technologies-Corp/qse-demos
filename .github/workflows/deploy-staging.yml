@@ -50,24 +50,21 @@ jobs:
 
           echo "Deploying $IMAGE to $INSTANCE_ID"
 
-          REMOTE_SCRIPT=$(cat <<EOF
-          set -euo pipefail
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY
-          docker pull $IMAGE
-          docker rm -f qse-demos || true
-          docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 $IMAGE
-          curl -fsS http://localhost/ >/dev/null
-          docker inspect qse-demos --format "{{.Config.Image}}"
-          docker ps --filter name=qse-demos
-          EOF
-          )
-
           COMMAND_ID=$(aws ssm send-command \
             --region "$AWS_REGION" \
             --document-name "AWS-RunShellScript" \
             --instance-ids "$INSTANCE_ID" \
             --comment "Deploy qse-demos $TAG" \
-            --parameters "{\"commands\":[\"$REMOTE_SCRIPT\"]}" \
+            --parameters "commands=[
+              \"set -euo pipefail\",
+              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY\",
+              \"docker pull $IMAGE\",
+              \"docker rm -f qse-demos || true\",
+              \"docker run -d --restart unless-stopped --name qse-demos -e PORT=5001 -e DEBUG=0 -p 80:5001 $IMAGE\",
+              \"curl -fsS http://localhost/ >/dev/null\",
+              \"docker inspect qse-demos --format \\\"{{.Config.Image}}\\\"\",
+              \"docker ps --filter name=qse-demos\"
+            ]" \
             --query "Command.CommandId" --output text)
 
           echo "SSM CommandId: $COMMAND_ID"
