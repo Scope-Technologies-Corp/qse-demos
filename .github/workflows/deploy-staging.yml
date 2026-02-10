@@ -43,6 +43,8 @@ jobs:
           TAG: sha-${{ github.sha }}
         run: |
           set -euo pipefail
+          # Trim whitespace so instance ID passes AWS validation (e.g. i-0123456789abcdef0)
+          INSTANCE_ID=$(echo "$INSTANCE_ID" | xargs)
 
           REGISTRY="$(echo "$ECR_REPO" | cut -d'/' -f1)"
           IMAGE="$ECR_REPO:$TAG"
