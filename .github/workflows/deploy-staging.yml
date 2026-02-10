@@ -56,7 +56,7 @@ jobs:
             --instance-ids "$INSTANCE_ID" \
             --comment "Deploy qse-demos $TAG" \
             --parameters "commands=[
-              \"set -euo pipefail\",
+              \"set -eu\",
               \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY\",
               \"docker pull $IMAGE\",
               \"docker rm -f qse-demos || true\",
