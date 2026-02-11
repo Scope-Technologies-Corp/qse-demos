@@ -533,6 +533,58 @@
             margin-bottom: 0;
         }
 
+        .knowledge-section {
+            margin-bottom: 28px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #7F3D97;
+        }
+        .knowledge-section h3 {
+            color: #7F3D97;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+        }
+        .knowledge-section p {
+            line-height: 1.7;
+            color: #444;
+            margin-bottom: 12px;
+        }
+        .example-box {
+            padding: 14px 18px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            margin: 14px 0;
+            line-height: 1.7;
+            color: #555;
+        }
+        .diagram-box {
+            padding: 14px 18px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            margin: 14px 0;
+        }
+        .diagram-box svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .knowledge-list {
+            margin: 8px 0 12px 18px;
+            color: #444;
+            line-height: 1.7;
+        }
+        .knowledge-section .callout {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: #e8f0fe;
+            border-radius: 8px;
+            font-size: 0.95em;
+            color: #333;
+        }
+
         @media (max-width: 768px) {
             .comparison-grid {
                 grid-template-columns: 1fr;
@@ -557,6 +609,7 @@
         <div class="demo-tabs">
             <button class="tab-button active" onclick="showTab('entropy')">Entropy Effectiveness</button>
             <button class="tab-button" onclick="showTab('rsa')">RSA Shared Prime</button>
+            <button class="tab-button" onclick="showTab('knowledge')">Knowledge</button>
             <div class="tabs-optional tabs-hidden" id="tabs-optional">
                 <button class="tab-button tab-button-optional" onclick="showTab('qrng-simple')">QRNG Key Derivation</button>
                 <button class="tab-button tab-button-optional" onclick="showTab('sts')">NIST STS Results</button>
@@ -626,7 +679,7 @@
                     <label for="message-entropy">Message to Encrypt:</label>
                     <input type="text" id="message-entropy" value="Entropy matters: weak seed space collapses security.">
                 </div>
-                <div class="input-group">
+                <div class="input-group" id="window-entropy-group">
                     <label for="window-entropy">Brute-Force Window (seconds):</label>
                     <input type="number" id="window-entropy" value="120" min="10" max="600">
                 </div>
@@ -725,6 +778,9 @@
             <p style="margin-bottom: 20px; color: #666;">
                 Generate RSA keys with weak vs. QRNG entropy and detect shared prime factors that compromise security.
             </p>
+            <p style="margin-top: -10px; margin-bottom: 20px; color: #666; font-size: 0.95em;">
+                <strong>What this test does:</strong> it generates many RSA public keys, then scans every pair for a shared prime factor using a GCD check. If any two keys share a prime, those keys are completely breakable.
+            </p>
 
             <div class="input-group">
                 <label for="qrng-b64-rsa">QRNG Base64 Data (256+ bytes):</label>
@@ -768,6 +824,226 @@
             </div>
 
             <div id="rsa-results" class="results"></div>
+        </div>
+
+        <!-- Knowledge Tab -->
+        <div id="knowledge-panel" class="demo-panel">
+            <h2>Knowledge</h2>
+            <p style="margin-bottom: 25px; color: #666;">Answers to common questions about classical vs quantum entropy, Shor's algorithm, and the QSE hybrid approach.</p>
+
+            <section class="knowledge-section">
+                <h3>1. Why Classical Encryption Fails — Quick Refresher</h3>
+                <p>Classical encryption (like AES and RSA) is built on strong math, but that math assumes one critical thing: <strong>the keys are unpredictable</strong>. If the key (or the seed used to make the key) comes from a small or predictable set, attackers can <strong>guess or brute-force</strong> it long before the math becomes relevant.</p>
+                <p><strong>In simple terms:</strong> Encryption is a lock, and the key must be truly hard to guess. If the key was made from something predictable—like the current time, a VM boot pattern, or a weak random generator—then attackers don't need to “break AES” or “break RSA.” They just need to <strong>re-create the same key</strong>.</p>
+
+                <ul class="knowledge-list">
+                    <li><strong>Weak seed space:</strong> only \(2^{12}\) possibilities (4096) is tiny for a computer.</li>
+                    <li><strong>Repeated seeds:</strong> clones/containers/VMs can start with similar state and generate the same “random” values.</li>
+                    <li><strong>Early-boot entropy:</strong> right after boot, systems often have less randomness available.</li>
+                    <li><strong>“Looks random” is not enough:</strong> patterns you can't see can still be exploited.</li>
+                </ul>
+
+                <div class="diagram-box" aria-label="Diagram: how weak entropy breaks classical encryption">
+                    <svg viewBox="0 0 900 170" role="img">
+                        <defs>
+                            <marker id="arrow1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <path d="M0,0 L10,3 L0,6 Z" fill="#7F3D97"></path>
+                            </marker>
+                        </defs>
+                        <rect x="20" y="50" width="170" height="70" rx="10" fill="#f8f9fa" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="105" y="80" text-anchor="middle" fill="#333" font-size="16" font-weight="600">Weak entropy</text>
+                        <text x="105" y="102" text-anchor="middle" fill="#555" font-size="13">timestamp / small seeds</text>
+
+                        <line x1="190" y1="85" x2="250" y2="85" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow1)"></line>
+
+                        <rect x="250" y="50" width="170" height="70" rx="10" fill="#f8f9fa" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="335" y="80" text-anchor="middle" fill="#333" font-size="16" font-weight="600">Key generation</text>
+                        <text x="335" y="102" text-anchor="middle" fill="#555" font-size="13">same seeds → same keys</text>
+
+                        <line x1="420" y1="85" x2="480" y2="85" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow1)"></line>
+
+                        <rect x="480" y="50" width="170" height="70" rx="10" fill="#f8f9fa" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="565" y="80" text-anchor="middle" fill="#333" font-size="16" font-weight="600">Encryption</text>
+                        <text x="565" y="102" text-anchor="middle" fill="#555" font-size="13">AES/RSA used “correctly”</text>
+
+                        <line x1="650" y1="85" x2="710" y2="85" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow1)"></line>
+
+                        <rect x="710" y="50" width="170" height="70" rx="10" fill="#fff" stroke="#e74c3c" stroke-width="2"></rect>
+                        <text x="795" y="78" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Attacker</text>
+                        <text x="795" y="100" text-anchor="middle" fill="#e74c3c" font-size="13">brute-force / shared primes</text>
+                    </svg>
+                </div>
+
+                <div class="example-box">
+                    <strong>Example:</strong> Imagine generating RSA keys on 1,000 servers that all boot at roughly the same time and use the system clock as their main randomness. Many keys can accidentally reuse the same prime number. Once an attacker finds one shared prime (via a simple GCD scan across public keys), they can factor the keys and fully break them. This is a classic “encryption failed because randomness failed” story.
+                </div>
+                <p class="callout">In our demos, we show exactly this: weak entropy (e.g. timestamp or tiny seed space) leads to breakable keys or shared primes; strong entropy avoids that.</p>
+            </section>
+
+            <section class="knowledge-section">
+                <h3>2. How Quantum Entropy Is Different from Classical Entropy (and Why It's Undeterministic)</h3>
+                <p>Most “classical randomness” is generated from physical processes that are <strong>very hard to model</strong> (timing jitter, thermal noise, user input timing, etc.). That can be good enough, but at the deepest level classical physics is still <strong>cause-and-effect</strong>: if you knew <em>everything</em>, you could (in principle) predict the outcome.</p>
+                <p><strong>Quantum entropy</strong> is different: in quantum mechanics, certain outcomes are <strong>not determined until measurement</strong>. Even with perfect knowledge of the setup, you can’t predict the next bit. This is often described as <strong>non-deterministic</strong> randomness.</p>
+
+                <div class="diagram-box" aria-label="Diagram: classical unpredictability vs quantum non-determinism">
+                    <svg viewBox="0 0 900 200" role="img">
+                        <defs>
+                            <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <path d="M0,0 L10,3 L0,6 Z" fill="#7F3D97"></path>
+                            </marker>
+                        </defs>
+                        <rect x="30" y="30" width="390" height="140" rx="12" fill="#f8f9fa" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="225" y="60" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Classical source</text>
+                        <text x="225" y="86" text-anchor="middle" fill="#555" font-size="13">hard to predict in practice</text>
+                        <text x="225" y="108" text-anchor="middle" fill="#555" font-size="13">but outcome “exists” physically</text>
+                        <text x="225" y="130" text-anchor="middle" fill="#555" font-size="13">(deterministic in principle)</text>
+
+                        <rect x="480" y="30" width="390" height="140" rx="12" fill="#fff" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="675" y="60" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Quantum source (QRNG)</text>
+                        <text x="675" y="86" text-anchor="middle" fill="#555" font-size="13">measurement outcome is not</text>
+                        <text x="675" y="108" text-anchor="middle" fill="#555" font-size="13">fixed ahead of time</text>
+                        <text x="675" y="130" text-anchor="middle" fill="#555" font-size="13">(non-deterministic)</text>
+
+                        <line x1="420" y1="100" x2="480" y2="100" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow2)"></line>
+                        <text x="450" y="92" text-anchor="middle" fill="#7F3D97" font-size="12" font-weight="600">contrast</text>
+                    </svg>
+                </div>
+
+                <p><strong>In simple terms:</strong> A coin flip looks random because you don’t know all the details. A quantum measurement is random because the universe doesn’t “decide” the result until you measure.</p>
+                <div class="example-box">
+                    <strong>Example:</strong> A QRNG might measure a photon passing through an optical setup. Before measurement, the next bit isn't “hidden somewhere” waiting to be discovered; the measurement produces one of multiple possible outcomes. Because there is no deterministic rule that picks the next result, attackers cannot “learn the pattern” the way they might try to learn patterns in a flawed classical generator.
+                </div>
+                <p class="callout">That's why we use quantum entropy in the demos: it provides a source that, in principle, cannot be predicted even by an attacker with full knowledge of the system.</p>
+            </section>
+
+            <section class="knowledge-section">
+                <h3>3. Shor's Algorithm in Layman Terms — Why It Breaks RSA</h3>
+                <p>RSA works by multiplying two secret prime numbers \(p\) and \(q\) to make a public number \(N = p \times q\). Everyone can see \(N\) (it’s in the public key), but \(p\) and \(q\) are kept secret. If an attacker can find \(p\) and \(q\), they can derive the private key and decrypt messages or forge signatures.</p>
+                <p><strong>Why RSA is safe today (classical computers):</strong> For large keys (like 2048-bit RSA), factoring \(N\) back into \(p\) and \(q\) is so slow that it’s effectively impossible with classical computers.</p>
+                <p><strong>What changes with Shor’s algorithm:</strong> Shor’s algorithm is a quantum method that can factor large numbers <strong>dramatically faster</strong> (on a sufficiently large, fault-tolerant quantum computer). That removes the “factoring is too hard” assumption that RSA depends on.</p>
+
+                <div class="diagram-box" aria-label="Diagram: RSA relies on factoring being hard; Shor makes factoring feasible">
+                    <svg viewBox="0 0 900 210" role="img">
+                        <defs>
+                            <marker id="arrow3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <path d="M0,0 L10,3 L0,6 Z" fill="#7F3D97"></path>
+                            </marker>
+                        </defs>
+                        <rect x="30" y="30" width="260" height="150" rx="12" fill="#f8f9fa" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="160" y="62" text-anchor="middle" fill="#333" font-size="16" font-weight="700">RSA public</text>
+                        <text x="160" y="92" text-anchor="middle" fill="#555" font-size="13">N = p × q</text>
+                        <text x="160" y="114" text-anchor="middle" fill="#555" font-size="13">N is public</text>
+                        <text x="160" y="136" text-anchor="middle" fill="#555" font-size="13">p,q are secret</text>
+
+                        <line x1="290" y1="105" x2="360" y2="105" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow3)"></line>
+                        <text x="325" y="96" text-anchor="middle" fill="#7F3D97" font-size="12" font-weight="600">factor N</text>
+
+                        <rect x="360" y="30" width="240" height="150" rx="12" fill="#fff" stroke="#999" stroke-width="2"></rect>
+                        <text x="480" y="62" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Classical</text>
+                        <text x="480" y="92" text-anchor="middle" fill="#555" font-size="13">factoring is</text>
+                        <text x="480" y="114" text-anchor="middle" fill="#555" font-size="13">impractically slow</text>
+                        <text x="480" y="136" text-anchor="middle" fill="#27ae60" font-size="13" font-weight="700">RSA holds</text>
+
+                        <rect x="630" y="30" width="240" height="150" rx="12" fill="#fff" stroke="#e74c3c" stroke-width="2"></rect>
+                        <text x="750" y="62" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Quantum (Shor)</text>
+                        <text x="750" y="92" text-anchor="middle" fill="#555" font-size="13">factoring becomes</text>
+                        <text x="750" y="114" text-anchor="middle" fill="#555" font-size="13">feasible at scale</text>
+                        <text x="750" y="136" text-anchor="middle" fill="#e74c3c" font-size="13" font-weight="700">RSA breaks</text>
+                    </svg>
+                </div>
+
+                <p><strong>Important distinction:</strong> Better entropy prevents <em>weak-key failures</em> (predictable or repeated keys), but it does not stop Shor’s algorithm from breaking RSA once a sufficiently capable quantum computer exists. That’s why post-quantum cryptography matters too.</p>
+                <div class="example-box">
+                    <strong>Example:</strong> Breaking a 2048-bit RSA key by brute force would take classical computers longer than the age of the universe. Shor's algorithm could reduce that to hours or less on a sufficiently large, fault-tolerant quantum computer. So "RSA is safe because factoring is hard" stops being true in the quantum era—hence the need for post-quantum algorithms and better entropy (e.g. QSE) today.
+                </div>
+            </section>
+
+            <section class="knowledge-section">
+                <h3>4. Why the QSE Hybrid Approach Helps</h3>
+                <p>The QSE hybrid approach focuses on a common root cause of real-world crypto failures: <strong>weak entropy during key generation</strong>. Instead of relying only on OS randomness (which can be strong, but can also be weak in certain environments), QSE brings in <strong>quantum entropy from QRNG cards</strong> and uses it as the source material to derive keys.</p>
+                <p><strong>In simple terms:</strong> We don’t “change the lock.” We make sure the key is made from something an attacker can’t guess. Quantum entropy prevents the “small seed space” problem and reduces the chance of repeated keys across devices and deployments.</p>
+
+                <div class="diagram-box" aria-label="Diagram: QSE hybrid flow from quantum entropy to keys">
+                    <svg viewBox="0 0 900 190" role="img">
+                        <defs>
+                            <marker id="arrow4" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <path d="M0,0 L10,3 L0,6 Z" fill="#7F3D97"></path>
+                            </marker>
+                        </defs>
+                        <rect x="30" y="55" width="200" height="80" rx="12" fill="#fff" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="130" y="86" text-anchor="middle" fill="#333" font-size="16" font-weight="700">QRNG card</text>
+                        <text x="130" y="110" text-anchor="middle" fill="#555" font-size="13">quantum entropy</text>
+
+                        <line x1="230" y1="95" x2="300" y2="95" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow4)"></line>
+
+                        <rect x="300" y="55" width="220" height="80" rx="12" fill="#f8f9fa" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="410" y="86" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Key derivation</text>
+                        <text x="410" y="110" text-anchor="middle" fill="#555" font-size="13">HKDF/KDF, per-purpose keys</text>
+
+                        <line x1="520" y1="95" x2="590" y2="95" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow4)"></line>
+
+                        <rect x="590" y="35" width="280" height="120" rx="12" fill="#fff" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="730" y="66" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Crypto systems</text>
+                        <text x="730" y="92" text-anchor="middle" fill="#555" font-size="13">AES (data), RSA/ECC (legacy),</text>
+                        <text x="730" y="114" text-anchor="middle" fill="#555" font-size="13">Kyber/Dilithium (post-quantum)</text>
+                        <text x="730" y="136" text-anchor="middle" fill="#27ae60" font-size="13" font-weight="700">stronger keys today</text>
+                    </svg>
+                </div>
+
+                <ul class="knowledge-list">
+                    <li><strong>Reduces predictability:</strong> no tiny seed space for attackers to search.</li>
+                    <li><strong>Reduces reuse:</strong> different deployments/devices are less likely to generate related keys.</li>
+                    <li><strong>Improves today’s security posture:</strong> even before full post-quantum migration completes.</li>
+                </ul>
+
+                <div class="example-box">
+                    <strong>Example:</strong> In the Entropy Effectiveness demo, when you use QRNG data, the key is derived from 256 bytes of quantum entropy. An attacker cannot brute-force that space. In the RSA demo, when keys are generated with that same quality of entropy, you don't get shared primes across devices. So the hybrid approach "fixes" the problem where classical encryption fails due to bad randomness, while the algorithms themselves stay the same.
+                </div>
+                <p class="callout">QSE doesn't replace post-quantum algorithms (like Kyber/Dilithium); it strengthens how keys are generated today, so existing systems are less vulnerable to entropy-related attacks.</p>
+            </section>
+
+            <section class="knowledge-section">
+                <h3>5. Why Kyber and Dilithium Aren't an Immediate Solution (Adoption Takes Time)</h3>
+                <p>Kyber (key establishment) and Dilithium (digital signatures) are post-quantum algorithms selected by NIST. They are designed to remain secure even if large quantum computers become available. However, <strong>standardization is not the same as industry-wide deployment</strong>.</p>
+                <p><strong>In simple terms:</strong> Rolling out new cryptography is like changing the locks on every door in a city. You must update servers, browsers, mobile apps, routers, VPNs, HSMs, certificate infrastructure, third-party vendors, and monitoring systems. That takes time, testing, and coordinated upgrades.</p>
+
+                <div class="diagram-box" aria-label="Diagram: post-quantum adoption is a multi-year transition">
+                    <svg viewBox="0 0 900 190" role="img">
+                        <defs>
+                            <marker id="arrow5" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <path d="M0,0 L10,3 L0,6 Z" fill="#7F3D97"></path>
+                            </marker>
+                        </defs>
+                        <rect x="40" y="55" width="200" height="80" rx="12" fill="#fff" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="140" y="88" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Today</text>
+                        <text x="140" y="112" text-anchor="middle" fill="#555" font-size="13">RSA/ECC everywhere</text>
+
+                        <line x1="240" y1="95" x2="310" y2="95" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow5)"></line>
+
+                        <rect x="310" y="55" width="250" height="80" rx="12" fill="#f8f9fa" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="435" y="88" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Transition</text>
+                        <text x="435" y="112" text-anchor="middle" fill="#555" font-size="13">hybrid mode, pilots, tooling</text>
+
+                        <line x1="560" y1="95" x2="630" y2="95" stroke="#7F3D97" stroke-width="3" marker-end="url(#arrow5)"></line>
+
+                        <rect x="630" y="55" width="230" height="80" rx="12" fill="#fff" stroke="#7F3D97" stroke-width="2"></rect>
+                        <text x="745" y="88" text-anchor="middle" fill="#333" font-size="16" font-weight="700">Broad adoption</text>
+                        <text x="745" y="112" text-anchor="middle" fill="#555" font-size="13">Kyber/Dilithium at scale</text>
+                    </svg>
+                </div>
+
+                <ul class="knowledge-list">
+                    <li><strong>Compatibility:</strong> every client and server must understand the new algorithms.</li>
+                    <li><strong>Infrastructure:</strong> certificate chains, PKI, code signing, and HSM support must mature.</li>
+                    <li><strong>Performance & sizes:</strong> different key/ciphertext sizes and CPU cost affect systems.</li>
+                    <li><strong>Compliance:</strong> regulated industries require validation, policy updates, audits.</li>
+                    <li><strong>Long tail:</strong> embedded/legacy devices can remain in the field for many years.</li>
+                </ul>
+                <div class="example-box">
+                    <strong>Example:</strong> A bank might use TLS, code-signing, and internal PKI. Moving to Kyber/Dilithium means upgrading servers, clients, HSMs, and third-party integrations. Some devices may not support new algorithms for years. Key sizes and performance differ, so tuning and monitoring are needed. Regulators and standards bodies need to endorse and timeline the transition. So "Kyber and Dilithium exist" doesn't mean "everyone can switch tomorrow"—industry-wide adoption needs more time.
+                </div>
+                <p class="callout">In the meantime, improving entropy quality with QSE hybrid approach reduces risk from weak randomness and keeps existing crypto stronger while the industry moves toward post-quantum algorithms.</p>
+            </section>
         </div>
 
         <!-- QRNG Simple Demo -->
@@ -1141,12 +1417,21 @@
         function toggleSystemEntropyInput() {
             const checkbox = document.getElementById('use-system-entropy');
             const bitsGroup = document.getElementById('system-entropy-bits-group');
+            const windowGroup = document.getElementById('window-entropy-group');
+            const windowInput = document.getElementById('window-entropy');
             if (checkbox.checked) {
                 bitsGroup.style.display = 'block';
+                if (windowGroup) windowGroup.style.display = 'none';
+                if (windowInput) windowInput.disabled = true;
             } else {
                 bitsGroup.style.display = 'none';
+                if (windowGroup) windowGroup.style.display = 'block';
+                if (windowInput) windowInput.disabled = false;
             }
         }
+
+        // Ensure correct initial state (in case browser restores checkbox state)
+        toggleSystemEntropyInput();
 
         // Entropy Demo
         async function runEntropyDemo() {
@@ -1796,6 +2081,22 @@
                 weak.top_p_fingerprints.forEach(p => {
                     html += `<div class="result-item">${p.fp}: repeated ${p.count} times</div>`;
                 });
+            }
+            if (seedSpaceBits <= 64) {
+                html += '<div class="alert alert-info" style="margin-top: 15px; background: #eef6ff; border-left: 4px solid #2196F3; padding: 12px 15px; border-radius: 8px; color: #333;">';
+                html += '<strong>What is a “Prime Fingerprint” and why does it matter?</strong><br>';
+                html += '<div style="margin-top: 8px; line-height: 1.6; color: #555;">';
+                html += 'RSA keys are built from two secret primes \(p\\) and \(q\\). For safety, those primes must be unique and unpredictable. ';
+                html += '<strong>We do not show the primes themselves</strong> (they are huge numbers), so instead we compute a short label (“fingerprint”) for each prime—think of it like a <strong>barcode</strong> for a prime. ';
+                html += 'In this demo, a fingerprint is a short prefix of a SHA-256 hash of the prime, so the chance of two different primes having the same fingerprint is extremely tiny.';
+                html += '</div>';
+                html += '<ul style="margin: 10px 0 0 18px; color: #555; line-height: 1.6;">';
+                html += '<li><strong>If a fingerprint repeats</strong>, it almost certainly means the <strong>same prime was reused</strong> across multiple keys.</li>';
+                html += '<li>If two RSA moduli share a prime, an attacker can compute <strong>GCD(nᵢ, nⱼ)</strong> and instantly recover that shared prime — then both keys are fully broken.</li>';
+                html += '<li><strong>Entropy size & quality controls repeats:</strong> a small/guessable seed space (e.g. ' + seedSpaceBits + ' bits) makes RNG states repeat → primes repeat. High-quality entropy (QRNG) makes repeats vanishingly unlikely.</li>';
+                html += '<li><strong>Prime size is not the fix:</strong> increasing RSA modulus bits makes primes bigger, but it does not fix weak randomness. Weak entropy can still cause repeated primes even at large key sizes.</li>';
+                html += '</ul>';
+                html += '</div>';
             }
             if (seedSpaceBits > 32 && weak.vulnerable_count === 0) {
                 html += '<div class="alert alert-success" style="margin-top: 15px;">With large seed space (64+ bits), each key gets unique entropy → no shared primes.</div>';
