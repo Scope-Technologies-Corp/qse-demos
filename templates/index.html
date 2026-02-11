@@ -62,24 +62,32 @@
 
         .demo-tabs {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
 
+        .tabs-optional {
+            display: contents;
+        }
+        .tabs-optional.tabs-hidden .tab-button-optional {
+            display: none !important;
+        }
+
         .tab-button {
-            flex: 1;
-            min-width: 200px;
-            padding: 15px 25px;
+            flex: 1 1 0;
+            min-width: 120px;
+            padding: 14px 20px;
             background: white;
             border: none;
             border-radius: 10px;
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             color: #7F3D97;
+            text-align: center;
         }
 
         .tab-button:hover {
@@ -549,9 +557,11 @@
         <div class="demo-tabs">
             <button class="tab-button active" onclick="showTab('entropy')">Entropy Effectiveness</button>
             <button class="tab-button" onclick="showTab('rsa')">RSA Shared Prime</button>
-            <button class="tab-button" onclick="showTab('qrng-simple')">QRNG Key Derivation</button>
-            <button class="tab-button" onclick="showTab('sts')">NIST STS Results</button>
-            <button class="tab-button" onclick="showTab('dieharder')">Dieharder Results</button>
+            <div class="tabs-optional tabs-hidden" id="tabs-optional">
+                <button class="tab-button tab-button-optional" onclick="showTab('qrng-simple')">QRNG Key Derivation</button>
+                <button class="tab-button tab-button-optional" onclick="showTab('sts')">NIST STS Results</button>
+                <button class="tab-button tab-button-optional" onclick="showTab('dieharder')">Dieharder Results</button>
+            </div>
         </div>
 
         <!-- Entropy Effectiveness Demo -->
@@ -1030,6 +1040,15 @@
                 setTimeout(() => loadDieharderResults(), 100);
             }
         }
+
+        // Toggle optional tabs (QRNG Key Derivation, NIST STS, Dieharder) with Ctrl+H / Cmd+H
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+                e.preventDefault();
+                var el = document.getElementById('tabs-optional');
+                if (el) el.classList.toggle('tabs-hidden');
+            }
+        });
 
         // Clear results
         function clearResults(demoType) {
