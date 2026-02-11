@@ -1,21 +1,24 @@
-name: build and push (staging)
+name: deploy (production)
 
 on:
   push:
-    branches: ["main"]
+    tags:
+      - "v*.*.*"   # v1.0.0, v2.3.4 etc.
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build_push:
+  deploy_prod:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production
 
     steps:
-      - name: Checkout
+      - name: Checkout (tag)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # important for merge-base checks
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -26,22 +29,39 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push image
+      - name: Safety check (tag commit must be on main)
+        run: |
+          set -euo pipefail
+
+          # Ensure we have origin/main locally
+          git fetch origin main
+
+          TAG_COMMIT="$(git rev-parse HEAD)"  # checkout is already at the tag commit
+          if git merge-base --is-ancestor "$TAG_COMMIT" "origin/main"; then
+            echo "✅ Tag commit is on main"
+          else
+            echo "❌ Tag commit is NOT on main. Refusing production deploy."
+            echo "Tag: ${GITHUB_REF_NAME}"
+            echo "Commit: $TAG_COMMIT"
+            exit 1
+          fi
+
+      - name: Build and push image (tagged)
         env:
           ECR_REPO: ${{ secrets.ECR_REPO }}
-          TAG: sha-${{ github.sha }}
+          TAG: ${{ github.ref_name }}  # v1.0.0
         run: |
           set -euo pipefail
           docker build -t "$ECR_REPO:$TAG" .
           docker push "$ECR_REPO:$TAG"
           echo "Pushed $ECR_REPO:$TAG"
 
-      - name: Deploy to EC2 via SSM (wait + logs + retry healthcheck)
+      - name: Deploy to EC2 via SSM (wait + output)
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
           ECR_REPO: ${{ secrets.ECR_REPO }}
-          TAG: sha-${{ github.sha }}
+          TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -54,22 +74,20 @@ jobs:
             --region "$AWS_REGION" \
             --document-name "AWS-RunShellScript" \
             --instance-ids "$INSTANCE_ID" \
-            --comment "Deploy qse-demos $TAG" \
+            --comment "Deploy qse-demos PROD $TAG" \
             --parameters "commands=[
               \"set -eu\",
               \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY\",
               \"docker pull $IMAGE\",
               \"docker rm -f qse-demos || true\",
-              \"docker run -d --restart unless-stopped --name qse-demos -e APP_ENV=staging -e PORT=5001 -p 80:5001 $IMAGE\",
-              \"for i in 1 2 3 4 5 6 7 8 9 10; do curl -fsS http://localhost/ >/dev/null 2>&1 && exit 0; sleep 3; done; echo HEALTHCHECK_FAILED; curl -v http://localhost/ || true; exit 1\",
-              \"docker inspect qse-demos --format \\\"{{.Config.Image}}\\\"\",
+              \"docker run -d --restart unless-stopped --name qse-demos -e APP_ENV=production -e PORT=5001 -p 80:5001 $IMAGE\",
+              \"for i in 1 2 3 4 5 6 7 8 9 10; do curl -fsS http://localhost/ >/dev/null 2>&1 && exit 0; sleep 3; done; echo HEALTHCHECK_FAILED; curl -I http://localhost/ || true; docker logs --tail 80 qse-demos || true; exit 1\",
               \"docker ps --filter name=qse-demos\"
             ]" \
             --query "Command.CommandId" --output text)
 
           echo "SSM CommandId: $COMMAND_ID"
 
-          # Wait; if it fails, print full SSM output + exit 1
           if ! aws ssm wait command-executed \
             --region "$AWS_REGION" \
             --command-id "$COMMAND_ID" \
@@ -84,7 +102,6 @@ jobs:
             exit 1
           fi
 
-          # Always print output (useful even on success)
           aws ssm get-command-invocation \
             --region "$AWS_REGION" \
             --command-id "$COMMAND_ID" \
