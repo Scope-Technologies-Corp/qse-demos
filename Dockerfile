@@ -190,7 +190,11 @@ EXPOSE 5001
 ENV PYTHONUNBUFFERED=1
 # Set library path for dieharder
 ENV LD_LIBRARY_PATH=/app/dieharder/libdieharder/.libs
-ENV PORT=5001
 ENV FLASK_ENV=production
+ENV PORT=5001
+ENV APP_ENV=production
 # Run the application
-CMD ["python3", "web_demo_app.py"]
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
